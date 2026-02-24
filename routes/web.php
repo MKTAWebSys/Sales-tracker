@@ -22,7 +22,14 @@ Route::middleware('auth')->group(function () {
         'edit',
         'update',
     ]);
-    Route::get('/calls', [CallController::class, 'index'])->name('calls.index');
+    Route::resource('calls', CallController::class)->only([
+        'index',
+        'create',
+        'store',
+        'show',
+        'edit',
+        'update',
+    ]);
     Route::get('/follow-ups', [FollowUpController::class, 'index'])->name('follow-ups.index');
     Route::get('/lead-transfers', [LeadTransferController::class, 'index'])->name('lead-transfers.index');
     Route::get('/meetings', [MeetingController::class, 'index'])->name('meetings.index');

@@ -9,6 +9,7 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ route('calls.create', ['company_id' => $company->id]) }}" class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white">New call</a>
             <a href="{{ route('companies.edit', $company) }}" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Edit</a>
             <a href="{{ route('companies.index') }}" class="rounded-md bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Back</a>
         </div>
@@ -51,12 +52,26 @@
         </div>
 
         <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <h2 class="text-lg font-semibold">Recent calls (placeholder)</h2>
+            <div class="flex items-center justify-between gap-3">
+                <h2 class="text-lg font-semibold">Call timeline</h2>
+                <a href="{{ route('calls.index') }}" class="text-sm text-slate-600 hover:text-slate-900">All calls</a>
+            </div>
             <ul class="mt-4 space-y-3 text-sm text-slate-700">
                 @forelse ($company->calls as $call)
                     <li class="rounded-lg border border-slate-100 p-3">
-                        <div class="font-medium">{{ $call->outcome }}</div>
-                        <div class="text-slate-500">{{ $call->called_at?->format('Y-m-d H:i') ?: '-' }}</div>
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="font-medium">{{ $call->outcome }}</div>
+                            <a href="{{ route('calls.show', $call) }}" class="text-xs text-slate-600 hover:text-slate-900">Detail</a>
+                        </div>
+                        <div class="mt-1 text-slate-500">{{ $call->called_at?->format('Y-m-d H:i') ?: '-' }}</div>
+                        @if ($call->summary)
+                            <p class="mt-2 line-clamp-3 text-slate-700">{{ $call->summary }}</p>
+                        @endif
+                        @if ($call->next_follow_up_at)
+                            <div class="mt-2 text-xs text-amber-700">
+                                Next follow-up: {{ $call->next_follow_up_at->format('Y-m-d H:i') }}
+                            </div>
+                        @endif
                     </li>
                 @empty
                     <li class="text-slate-500">No calls yet.</li>
