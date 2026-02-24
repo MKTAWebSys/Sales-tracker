@@ -4,6 +4,7 @@ use App\Http\Controllers\CallController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FollowUpController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\LeadTransferController;
 use App\Http\Controllers\MeetingController;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +39,7 @@ Route::middleware('auth')->group(function () {
         'edit',
         'update',
     ]);
+    Route::get('/imports/xlsx', [ImportController::class, 'xlsx'])->name('imports.xlsx');
     Route::get('/lead-transfers', [LeadTransferController::class, 'index'])->name('lead-transfers.index');
     Route::get('/meetings', [MeetingController::class, 'index'])->name('meetings.index');
 });
