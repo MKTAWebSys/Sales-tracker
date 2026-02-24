@@ -14,7 +14,14 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
+    Route::resource('companies', CompanyController::class)->only([
+        'index',
+        'create',
+        'store',
+        'show',
+        'edit',
+        'update',
+    ]);
     Route::get('/calls', [CallController::class, 'index'])->name('calls.index');
     Route::get('/follow-ups', [FollowUpController::class, 'index'])->name('follow-ups.index');
     Route::get('/lead-transfers', [LeadTransferController::class, 'index'])->name('lead-transfers.index');
