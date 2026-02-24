@@ -32,4 +32,14 @@ class FollowUp extends Model
     {
         return $this->belongsTo(Company::class);
     }
+
+    public function call(): BelongsTo
+    {
+        return $this->belongsTo(Call::class);
+    }
+
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
 }

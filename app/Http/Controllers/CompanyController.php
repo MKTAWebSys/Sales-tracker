@@ -9,10 +9,34 @@ use Illuminate\View\View;
 
 class CompanyController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $query = Company::query()->with('assignedUser')->latest();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        if ($request->filled('assigned_user_id')) {
+            $query->where('assigned_user_id', $request->integer('assigned_user_id'));
+        }
+
+        if ($request->filled('q')) {
+            $search = trim((string) $request->input('q'));
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('ico', 'like', "%{$search}%");
+            });
+        }
+
         return view('crm.companies.index', [
-            'companies' => Company::query()->latest()->paginate(15),
+            'companies' => $query->paginate(15)->withQueryString(),
+            'filters' => [
+                'q' => (string) $request->input('q', ''),
+                'status' => (string) $request->input('status', ''),
+                'assigned_user_id' => (string) $request->input('assigned_user_id', ''),
+            ],
         ]);
     }
 

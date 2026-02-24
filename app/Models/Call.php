@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Call extends Model
 {
@@ -45,5 +46,10 @@ class Call extends Model
     public function handedOverTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'handed_over_to_id');
+    }
+
+    public function followUps(): HasMany
+    {
+        return $this->hasMany(FollowUp::class);
     }
 }

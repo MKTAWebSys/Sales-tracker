@@ -29,4 +29,9 @@ class Company extends Model
     {
         return $this->hasMany(Call::class);
     }
+
+    public function followUps(): HasMany
+    {
+        return $this->hasMany(FollowUp::class);
+    }
 }

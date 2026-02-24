@@ -10,13 +10,42 @@ use Illuminate\View\View;
 
 class CallController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $query = Call::query()
+            ->with(['company', 'caller'])
+            ->latest('called_at');
+
+        if ($request->filled('outcome')) {
+            $query->where('outcome', $request->string('outcome'));
+        }
+
+        if ($request->filled('company_id')) {
+            $query->where('company_id', $request->integer('company_id'));
+        }
+
+        if ($request->filled('caller_id')) {
+            $query->where('caller_id', $request->integer('caller_id'));
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('called_at', '>=', $request->date('date_from')?->toDateString());
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('called_at', '<=', $request->date('date_to')?->toDateString());
+        }
+
         return view('crm.calls.index', [
-            'calls' => Call::query()
-                ->with(['company', 'caller'])
-                ->latest('called_at')
-                ->paginate(20),
+            'calls' => $query->paginate(20)->withQueryString(),
+            'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
+            'filters' => [
+                'outcome' => (string) $request->input('outcome', ''),
+                'company_id' => (string) $request->input('company_id', ''),
+                'caller_id' => (string) $request->input('caller_id', ''),
+                'date_from' => (string) $request->input('date_from', ''),
+                'date_to' => (string) $request->input('date_to', ''),
+            ],
         ]);
     }
 
