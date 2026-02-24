@@ -2,23 +2,103 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Call;
+use App\Models\Company;
 use App\Models\LeadTransfer;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class LeadTransferController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        return view('crm.module-index', [
-            'title' => 'Předání leadů',
-            'description' => 'Evidence předání leadu mezi obchodníky.',
-            'rows' => LeadTransfer::query()->latest('transferred_at')->limit(20)->get(['id', 'status', 'transferred_at', 'created_at']),
-            'columns' => ['status' => 'Status', 'transferred_at' => 'Předáno', 'created_at' => 'Záznam'],
-            'todo' => [
-                'Formulář předání leadu',
-                'Kdo předal / komu předal',
-                'Audit změn stavu leadu',
+        $query = LeadTransfer::query()
+            ->with(['company', 'fromUser', 'toUser', 'call'])
+            ->latest('transferred_at');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        if ($request->filled('company_id')) {
+            $query->where('company_id', $request->integer('company_id'));
+        }
+
+        return view('crm.lead-transfers.index', [
+            'leadTransfers' => $query->paginate(20)->withQueryString(),
+            'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
+            'filters' => [
+                'status' => (string) $request->input('status', ''),
+                'company_id' => (string) $request->input('company_id', ''),
             ],
+        ]);
+    }
+
+    public function create(Request $request): View
+    {
+        return view('crm.lead-transfers.form', [
+            'leadTransfer' => new LeadTransfer([
+                'status' => 'pending',
+                'transferred_at' => now(),
+                'company_id' => $request->integer('company_id') ?: null,
+                'call_id' => $request->integer('call_id') ?: null,
+            ]),
+            'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
+            'calls' => Call::query()->with('company')->latest('called_at')->limit(100)->get(),
+            'users' => User::query()->orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $this->validateLeadTransfer($request);
+        $data['from_user_id'] = $data['from_user_id'] ?: $request->user()?->id;
+
+        $leadTransfer = LeadTransfer::create($data);
+
+        return redirect()
+            ->route('lead-transfers.show', $leadTransfer)
+            ->with('status', 'Lead transfer created.');
+    }
+
+    public function show(LeadTransfer $leadTransfer): View
+    {
+        $leadTransfer->load(['company', 'call', 'fromUser', 'toUser']);
+
+        return view('crm.lead-transfers.show', compact('leadTransfer'));
+    }
+
+    public function edit(LeadTransfer $leadTransfer): View
+    {
+        return view('crm.lead-transfers.form', [
+            'leadTransfer' => $leadTransfer,
+            'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
+            'calls' => Call::query()->with('company')->latest('called_at')->limit(100)->get(),
+            'users' => User::query()->orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    public function update(Request $request, LeadTransfer $leadTransfer): RedirectResponse
+    {
+        $leadTransfer->update($this->validateLeadTransfer($request));
+
+        return redirect()
+            ->route('lead-transfers.show', $leadTransfer)
+            ->with('status', 'Lead transfer updated.');
+    }
+
+    private function validateLeadTransfer(Request $request): array
+    {
+        return $request->validate([
+            'company_id' => ['required', 'exists:companies,id'],
+            'call_id' => ['nullable', 'exists:calls,id'],
+            'from_user_id' => ['nullable', 'exists:users,id'],
+            'to_user_id' => ['nullable', 'exists:users,id'],
+            'transferred_at' => ['required', 'date'],
+            'status' => ['required', 'string', 'max:50'],
+            'note' => ['nullable', 'string'],
         ]);
     }
 }

@@ -34,4 +34,14 @@ class Company extends Model
     {
         return $this->hasMany(FollowUp::class);
     }
+
+    public function leadTransfers(): HasMany
+    {
+        return $this->hasMany(LeadTransfer::class);
+    }
+
+    public function meetings(): HasMany
+    {
+        return $this->hasMany(Meeting::class);
+    }
 }
