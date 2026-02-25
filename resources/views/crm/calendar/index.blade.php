@@ -191,7 +191,7 @@
                 @endforeach
                 </div>
 
-                <div class="rounded-xl border border-slate-200 bg-white p-4">
+                <div class="rounded-xl border border-slate-200 bg-white p-4 lg:sticky lg:top-6 lg:self-start">
                     <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tydenni souhrn</div>
                     <div class="mt-1 text-sm text-slate-600">Pocet aktivit za den: hotovo vs neudelano.</div>
                     <div class="mt-4 space-y-2">
@@ -246,7 +246,7 @@
                                                 ? 'border-emerald-200 bg-emerald-50/15 hover:bg-emerald-50/30'
                                                 : 'border-slate-200 bg-white hover:bg-slate-50'))));
                             @endphp
-                            <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['date' => $cell['key'], 'view' => 'month'])) }}"
+                            <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['date' => $cell['key'], 'view' => 'day'])) }}"
                                class="block min-h-24 rounded-xl border p-2 transition {{ $monthCellClass }} {{ ! $cell['isCurrentMonth'] ? 'opacity-60' : '' }}">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-sm font-semibold">{{ $cell['date']->format('j') }}</span>
