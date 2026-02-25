@@ -59,7 +59,7 @@
 
                 <div class="mt-5 grid gap-3 sm:grid-cols-2">
                     @if ($activeCall)
-                        <a href="{{ route('calls.finish', ['call' => $activeCall, 'caller_mode' => 1]) }}" class="flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-4 text-base font-semibold text-white shadow-sm">
+                        <a href="{{ route('calls.finish', ['call' => $activeCall, 'caller_mode' => 1, 'finalize_call' => 1]) }}" class="flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-4 text-base font-semibold text-white shadow-sm">
                             Ukoncit aktivni hovor
                         </a>
                     @else
