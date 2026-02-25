@@ -335,13 +335,6 @@
                     Ulozit a dalsi
                 </button>
             @endif
-            @if ($call->exists && ! $isActiveNoteOnlyFinish)
-                <a href="{{ $isCallerMode ? route('caller-mode.index') : route('calls.show', $call) }}" class="text-sm text-slate-600 hover:text-slate-900">Zrusit</a>
-            @else
-                @unless ($isActiveNoteOnlyFinish)
-                    <a href="{{ route('calls.index') }}" class="text-sm text-slate-600 hover:text-slate-900">Zrusit</a>
-                @endunless
-            @endif
         </div>
     </form>
 
