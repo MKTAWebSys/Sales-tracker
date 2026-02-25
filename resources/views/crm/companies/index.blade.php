@@ -108,10 +108,15 @@
                 <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Hromadne akce (firmy)</h2>
                 <p class="text-sm text-slate-600">Vybrano: <span class="js-bulk-selected-count font-semibold">0</span> firem (na aktualni strance).</p>
             </div>
-            <label class="inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600 ring-1 ring-slate-200">
-                <input type="checkbox" class="js-bulk-toggle-all rounded border-slate-300">
-                <span>Vybrat vse na strance</span>
-            </label>
+            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                <label class="inline-flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2 ring-1 ring-slate-200">
+                    <input type="checkbox" class="js-bulk-toggle-all rounded border-slate-300">
+                    <span>Vybrat vse na strance</span>
+                </label>
+                <button type="button" class="js-bulk-select-new rounded-md bg-amber-50 px-3 py-2 font-medium text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100">
+                    Vybrat vse new
+                </button>
+            </div>
         </div>
 
         <div class="mt-4 grid gap-4 lg:grid-cols-12">
@@ -204,7 +209,7 @@
                         @endphp
                         <tr class="{{ $rowClass }} cursor-pointer hover:brightness-[0.99]" data-row-link="{{ route('companies.show', $company) }}">
                             <td class="px-3 py-3 align-top" data-row-link-ignore>
-                                <input type="checkbox" name="company_ids[]" value="{{ $company->id }}" form="companies-bulk-form" class="js-bulk-company-checkbox mt-1 rounded border-slate-300" data-row-link-ignore>
+                                <input type="checkbox" name="company_ids[]" value="{{ $company->id }}" form="companies-bulk-form" class="js-bulk-company-checkbox mt-1 rounded border-slate-300" data-company-status="{{ $company->status }}" data-row-link-ignore>
                             </td>
                             <td class="px-4 py-3 align-top font-medium">
                                 <div>{{ $company->name }}</div>
@@ -267,6 +272,7 @@
             const statusWrap = document.querySelector('.js-bulk-status-wrap');
             const noteWrap = document.querySelector('.js-bulk-note-wrap');
             const allToggle = document.querySelector('.js-bulk-toggle-all');
+            const selectNewButton = document.querySelector('.js-bulk-select-new');
             const countEl = document.querySelector('.js-bulk-selected-count');
             const checkboxes = Array.from(document.querySelectorAll('.js-bulk-company-checkbox'));
 
@@ -295,6 +301,15 @@
                 allToggle.addEventListener('change', function () {
                     checkboxes.forEach((checkbox) => {
                         checkbox.checked = allToggle.checked;
+                    });
+                    updateSelectedCount();
+                });
+            }
+
+            if (selectNewButton) {
+                selectNewButton.addEventListener('click', function () {
+                    checkboxes.forEach((checkbox) => {
+                        checkbox.checked = checkbox.getAttribute('data-company-status') === 'new';
                     });
                     updateSelectedCount();
                 });
