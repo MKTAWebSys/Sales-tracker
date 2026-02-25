@@ -261,6 +261,12 @@ class CallController extends Controller
                 ->with('status', $statusMessage);
         }
 
+        if ($isFinishFlow) {
+            return redirect()
+                ->route('companies.queue.mine')
+                ->with('status', $statusMessage);
+        }
+
         return redirect()
             ->route('calls.show', $call)
             ->with('status', $statusMessage);
