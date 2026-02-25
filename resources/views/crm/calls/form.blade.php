@@ -358,7 +358,6 @@
             const followUpInput = form.querySelector('#next_follow_up_at');
             const followUpQuickDate = form.querySelector('.js-followup-quick-date');
             const followUpQuickTime = form.querySelector('.js-followup-quick-time');
-            const followUpPanel = form.querySelector('.js-panel-followup');
             const meetingInput = form.querySelector('#meeting_planned_at');
             const summaryInput = form.querySelector('#summary');
             const presetButtons = Array.from(form.querySelectorAll('.js-followup-preset'));
@@ -413,13 +412,6 @@
                 followUpQuickTime.value = (parts[1] || '').slice(0, 5);
             };
 
-            const openFollowUpPanel = function () {
-                if (!followUpPanel) return;
-                if (followUpPanel.tagName && followUpPanel.tagName.toLowerCase() === 'details') {
-                    followUpPanel.open = true;
-                }
-            };
-
             const hasValue = function (input) {
                 return !!(input && String(input.value || '').trim() !== '');
             };
@@ -454,7 +446,6 @@
 
                 setDateValue(followUpInput, target);
                 syncFollowUpQuickInput();
-                openFollowUpPanel();
 
             };
 
@@ -556,7 +547,6 @@
                 const time = String(followUpQuickTime.value || '').trim();
                 if (!date) return;
                 followUpInput.value = time ? (date + 'T' + time) : (date + 'T09:00');
-                openFollowUpPanel();
             };
 
             if (followUpQuickDate && followUpQuickTime && followUpInput) {
