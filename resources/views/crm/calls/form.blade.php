@@ -32,16 +32,6 @@
         @endif
     </div>
 
-    @if ($isFinishFlow)
-        <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-            <div class="font-medium">Hovor bezi / byl prave zahajen</div>
-            <div class="mt-1">
-                Firma: <span class="font-medium">{{ $company?->name ?? '-' }}</span> |
-                Start: <span class="font-medium">{{ $call->called_at?->format('Y-m-d H:i:s') ?? '-' }}</span>
-            </div>
-        </div>
-    @endif
-
     <form method="POST" action="{{ $call->exists ? route('calls.update', $call) : route('calls.store') }}" class="js-call-flow-form space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         @csrf
         @if ($call->exists)
@@ -55,40 +45,50 @@
             <input type="hidden" name="caller_mode" value="1">
         @endif
 
-        <div>
-            <label for="company_id" class="block text-sm font-medium text-slate-700">Firma</label>
-            <select id="company_id" name="company_id" required class="mt-1 w-full rounded-md border-slate-300" @disabled($isFinishFlow)>
-                <option value="">Vyberte firmu</option>
-                @foreach ($companies as $companyOption)
-                    <option value="{{ $companyOption->id }}" @selected((string) old('company_id', $call->company_id) === (string) $companyOption->id)>
-                        {{ $companyOption->name }}
-                    </option>
-                @endforeach
-            </select>
-            @if ($isFinishFlow)
-                <input type="hidden" name="company_id" value="{{ old('company_id', $call->company_id) }}">
-            @endif
-            @error('company_id')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
+        @if ($isActiveNoteOnlyFinish)
+            <input type="hidden" name="company_id" value="{{ old('company_id', $call->company_id) }}">
+            <input type="hidden" name="called_at" value="{{ old('called_at', optional($call->called_at)->format('Y-m-d\\TH:i:s')) }}">
+            <input type="hidden" name="outcome" value="pending">
 
-        <div class="grid gap-6 sm:grid-cols-2">
+            <div class="rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 p-6 text-white shadow-sm">
+                <div class="text-center">
+                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Probiha hovor</div>
+                    <div class="mt-3 text-4xl font-semibold tabular-nums sm:text-5xl js-call-live-timer" data-called-at="{{ $call->called_at?->toIso8601String() ?? '' }}">
+                        00:00
+                    </div>
+                    <div class="mt-3 text-lg font-medium text-white/90">{{ $company?->name ?? 'Bez firmy' }}</div>
+                    <div class="mt-1 text-xs text-slate-300">Start {{ $call->called_at?->format('Y-m-d H:i:s') ?? '-' }}</div>
+                </div>
+            </div>
+        @else
             <div>
-                <label for="called_at" class="block text-sm font-medium text-slate-700">{{ $isFinishFlow ? 'Cas startu hovoru' : 'Datum a cas hovoru' }}</label>
-                <input id="called_at" name="called_at" type="datetime-local" required value="{{ old('called_at', optional($call->called_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300" @readonly($isFinishFlow)>
-                @error('called_at')
+                <label for="company_id" class="block text-sm font-medium text-slate-700">Firma</label>
+                <select id="company_id" name="company_id" required class="mt-1 w-full rounded-md border-slate-300" @disabled($isFinishFlow)>
+                    <option value="">Vyberte firmu</option>
+                    @foreach ($companies as $companyOption)
+                        <option value="{{ $companyOption->id }}" @selected((string) old('company_id', $call->company_id) === (string) $companyOption->id)>
+                            {{ $companyOption->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @if ($isFinishFlow)
+                    <input type="hidden" name="company_id" value="{{ old('company_id', $call->company_id) }}">
+                @endif
+                @error('company_id')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
-            <div>
-                <label for="outcome" class="block text-sm font-medium text-slate-700">Vysledek</label>
-                @if ($isActiveNoteOnlyFinish)
-                    <div class="mt-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                        Rozpracovano (vysledek vyberes az pri ukonceni hovoru)
-                    </div>
-                    <input type="hidden" name="outcome" value="pending">
-                @else
+
+            <div class="grid gap-6 sm:grid-cols-2">
+                <div>
+                    <label for="called_at" class="block text-sm font-medium text-slate-700">{{ $isFinishFlow ? 'Cas startu hovoru' : 'Datum a cas hovoru' }}</label>
+                    <input id="called_at" name="called_at" type="datetime-local" required value="{{ old('called_at', optional($call->called_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300" @readonly($isFinishFlow)>
+                    @error('called_at')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="outcome" class="block text-sm font-medium text-slate-700">Vysledek</label>
                     <select id="outcome" name="outcome" class="js-call-outcome mt-1 w-full rounded-md border-slate-300">
                         @foreach (($isFinishFlow && $finalizeCall ? ['no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] : ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked']) as $outcome)
                             <option value="{{ $outcome }}" @selected(old('outcome', $finishOutcomeDefault) === $outcome)>
@@ -104,17 +104,17 @@
                             </option>
                         @endforeach
                     </select>
-                @endif
-                @error('outcome')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
+                    @error('outcome')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
-        </div>
+        @endif
 
         @if ($isFinishFlow)
             <div>
                 <label for="summary" class="block text-sm font-medium text-slate-700">Poznamka / shrnuti hovoru</label>
-                <textarea id="summary" name="summary" rows="6" class="mt-1 w-full rounded-md border-slate-300" autofocus>{{ old('summary', $call->summary) }}</textarea>
+                <textarea id="summary" name="summary" rows="{{ $isActiveNoteOnlyFinish ? '10' : '6' }}" class="mt-1 w-full rounded-md border-slate-300" autofocus>{{ old('summary', $call->summary) }}</textarea>
                 <p class="mt-1 text-xs text-slate-500">Poznamku muzes psat prubezne behem hovoru. Dalsi kroky se jen prizpusobi podle vysledku.</p>
                 @error('summary')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -212,9 +212,8 @@
 
         <div class="flex flex-wrap items-center gap-3">
             @if ($isActiveNoteOnlyFinish)
-                <button type="submit" class="rounded-md bg-violet-700 px-4 py-2 text-sm font-medium text-white">Ulozit poznamku behem hovoru</button>
-                <a href="{{ route('calls.finish', ['call' => $call, 'finalize_call' => 1, 'caller_mode' => $isCallerMode ? 1 : null]) }}" class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white">
-                    Ukoncit hovor a vybrat vysledek
+                <a href="{{ route('calls.finish', ['call' => $call, 'finalize_call' => 1, 'caller_mode' => $isCallerMode ? 1 : null]) }}" class="inline-flex w-full items-center justify-center rounded-md bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700 sm:w-auto sm:min-w-[15rem]">
+                    Ukoncit hovor
                 </a>
             @else
                 <button type="submit" class="rounded-md {{ $isFinishFlow ? 'bg-emerald-600' : 'bg-slate-900' }} px-4 py-2 text-sm font-medium text-white">{{ $submitText }}</button>
@@ -224,10 +223,12 @@
                     Ukoncit a dalsi firma
                 </button>
             @endif
-            @if ($call->exists)
+            @if ($call->exists && ! $isActiveNoteOnlyFinish)
                 <a href="{{ $isCallerMode ? route('caller-mode.index') : route('calls.show', $call) }}" class="text-sm text-slate-600 hover:text-slate-900">Zrusit</a>
             @else
-                <a href="{{ route('calls.index') }}" class="text-sm text-slate-600 hover:text-slate-900">Zrusit</a>
+                @unless ($isActiveNoteOnlyFinish)
+                    <a href="{{ route('calls.index') }}" class="text-sm text-slate-600 hover:text-slate-900">Zrusit</a>
+                @endunless
             @endif
         </div>
     </form>
@@ -251,6 +252,29 @@
             const draftKey = callId ? ('call-finish-summary-draft:' + String(callId)) : null;
             let autosaveTimer = null;
             let statusAutoTouched = false;
+            const liveTimer = form.querySelector('.js-call-live-timer');
+
+            const formatDuration = function (totalSeconds) {
+                const seconds = Math.max(0, totalSeconds | 0);
+                const hrs = Math.floor(seconds / 3600);
+                const mins = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+                const pad = (n) => String(n).padStart(2, '0');
+                return hrs > 0 ? (pad(hrs) + ':' + pad(mins) + ':' + pad(secs)) : (pad(mins) + ':' + pad(secs));
+            };
+
+            if (liveTimer) {
+                const calledAtIso = String(liveTimer.getAttribute('data-called-at') || '');
+                if (calledAtIso) {
+                    const startedAt = new Date(calledAtIso);
+                    const tick = function () {
+                        const diffSeconds = Math.floor((Date.now() - startedAt.getTime()) / 1000);
+                        liveTimer.textContent = formatDuration(diffSeconds);
+                    };
+                    tick();
+                    window.setInterval(tick, 1000);
+                }
+            }
 
             const setDateValue = function (input, date) {
                 if (!input) return;
