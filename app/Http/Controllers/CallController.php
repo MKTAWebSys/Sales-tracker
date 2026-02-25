@@ -64,6 +64,8 @@ class CallController extends Controller
             return redirect()->route('login');
         }
 
+        $this->closeStalePendingCallsForCallerId($user->id);
+
         $activeCall = Call::query()
             ->where('caller_id', $user->id)
             ->where('outcome', 'pending')
@@ -208,11 +210,19 @@ class CallController extends Controller
         $this->syncFirstContactedAt($call);
         $this->syncCompanyStatus($call, $companyStatus);
 
+        $closedStalePending = 0;
+        if ($isFinishFlow && $finalizeCall && $call->caller_id) {
+            $closedStalePending = $this->closeStalePendingCallsForCallerId($call->caller_id, $call->id);
+        }
+
         $baseMessage = $isFinishFlow
             ? 'Hovor byl ukoncen a ulozen.'
             : 'Hovor byl upraven.';
 
         $statusMessage = $this->buildSavedStatusMessage($baseMessage, $createdItems);
+        if ($closedStalePending > 0) {
+            $statusMessage .= ' Automaticky uzavreno starych rozpracovanych hovoru: '.$closedStalePending.'.';
+        }
         $wantsNextCompany = (string) $request->input('submit_action') === 'save_next_company'
             && $isFinishFlow;
 
@@ -413,5 +423,40 @@ class CallController extends Controller
         $call->company()->update([
             'first_contacted_at' => $call->called_at,
         ]);
+    }
+
+    private function closeStalePendingCallsForCallerId(int $callerId, ?int $keepCallId = null): int
+    {
+        $staleCalls = Call::query()
+            ->where('caller_id', $callerId)
+            ->where('outcome', 'pending')
+            ->when($keepCallId, fn ($query) => $query->where('id', '!=', $keepCallId))
+            ->orderByDesc('called_at')
+            ->get(['id', 'summary']);
+
+        if ($staleCalls->count() <= ($keepCallId ? 0 : 1)) {
+            return 0;
+        }
+
+        $callsToClose = $keepCallId ? $staleCalls : $staleCalls->slice(1);
+        $closed = 0;
+        $notePrefix = now()->format('Y-m-d H:i:s').' | System'.PHP_EOL
+            .'Automaticky uzavreno jako stary rozpracovany hovor (single active call pravidlo).';
+
+        foreach ($callsToClose as $staleCall) {
+            $summary = trim((string) $staleCall->summary);
+
+            Call::query()
+                ->whereKey($staleCall->id)
+                ->update([
+                    'outcome' => 'callback',
+                    'summary' => $summary === '' ? $notePrefix : rtrim($summary).PHP_EOL.PHP_EOL.$notePrefix,
+                    'updated_at' => now(),
+                ]);
+
+            $closed++;
+        }
+
+        return $closed;
     }
 }
