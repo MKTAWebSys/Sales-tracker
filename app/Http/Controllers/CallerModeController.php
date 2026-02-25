@@ -14,20 +14,21 @@ class CallerModeController extends Controller
         $user = $request->user();
         abort_unless($user, 401);
 
-        $company = Company::query()
-            ->with(['assignedUser', 'firstCaller'])
-            ->queuedForCaller($user->id)
-            ->orderBy('first_caller_assigned_at')
-            ->orderBy('id')
+        $activeCall = Call::query()
+            ->with('company.assignedUser', 'company.firstCaller')
+            ->where('caller_id', $user->id)
+            ->where('outcome', 'pending')
+            ->latest('called_at')
             ->first();
 
-        $activeCall = null;
-        if ($company) {
-            $activeCall = Call::query()
-                ->where('company_id', $company->id)
-                ->where('caller_id', $user->id)
-                ->where('outcome', 'pending')
-                ->latest('called_at')
+        $company = $activeCall?->company;
+
+        if (! $company) {
+            $company = Company::query()
+                ->with(['assignedUser', 'firstCaller'])
+                ->queuedForCaller($user->id)
+                ->orderBy('first_caller_assigned_at')
+                ->orderBy('id')
                 ->first();
         }
 

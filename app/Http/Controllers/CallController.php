@@ -59,9 +59,31 @@ class CallController extends Controller
 
     public function quickStart(Request $request, Company $company): RedirectResponse
     {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        $activeCall = Call::query()
+            ->where('caller_id', $user->id)
+            ->where('outcome', 'pending')
+            ->latest('called_at')
+            ->first();
+
+        if ($activeCall) {
+            $params = ['call' => $activeCall];
+            if ($request->boolean('caller_mode')) {
+                $params['caller_mode'] = 1;
+            }
+
+            return redirect()
+                ->route('calls.finish', $params)
+                ->with('status', 'Uz mate aktivni hovor. Nejdriv ho dokoncete nebo zapisujte poznamku v prubehu hovoru.');
+        }
+
         $call = Call::create([
             'company_id' => $company->id,
-            'caller_id' => $request->user()?->id,
+            'caller_id' => $user->id,
             'called_at' => now(),
             'outcome' => 'pending',
         ]);
@@ -132,17 +154,45 @@ class CallController extends Controller
 
     public function finish(Call $call): View
     {
+        $finalizeCall = request()->boolean('finalize_call') || $call->outcome !== 'pending';
+
         return view('crm.calls.form', [
             'call' => $call,
             'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
             'users' => User::query()->orderBy('name')->get(['id', 'name']),
             'companyStatuses' => self::COMPANY_STATUSES,
             'flowMode' => 'finish',
+            'finalizeCall' => $finalizeCall,
         ]);
     }
 
     public function update(Request $request, Call $call): RedirectResponse
     {
+        $isFinishFlow = (string) $request->input('flow_mode') === 'finish';
+        $isCallerMode = $request->boolean('caller_mode');
+        $finalizeCall = $request->boolean('finalize_call') || $call->outcome !== 'pending';
+
+        if ($isFinishFlow && $call->outcome === 'pending' && ! $finalizeCall) {
+            $data = $request->validate([
+                'company_id' => ['required', 'exists:companies,id'],
+                'called_at' => ['required', 'date'],
+                'summary' => ['nullable', 'string'],
+            ]);
+
+            $call->update([
+                'summary' => $data['summary'] ?? null,
+            ]);
+
+            $params = ['call' => $call];
+            if ($isCallerMode) {
+                $params['caller_mode'] = 1;
+            }
+
+            return redirect()
+                ->route('calls.finish', $params)
+                ->with('status', 'Poznamka k aktivnimu hovoru byla ulozena.');
+        }
+
         $data = $this->validateCall($request);
         $companyStatus = Arr::pull($data, 'company_status');
 
@@ -150,9 +200,6 @@ class CallController extends Controller
         $createdItems = $this->syncNextActions($call);
         $this->syncFirstContactedAt($call);
         $this->syncCompanyStatus($call, $companyStatus);
-
-        $isFinishFlow = (string) $request->input('flow_mode') === 'finish';
-        $isCallerMode = $request->boolean('caller_mode');
 
         $baseMessage = $isFinishFlow
             ? 'Hovor byl ukoncen a ulozen.'

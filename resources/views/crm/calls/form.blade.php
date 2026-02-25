@@ -1,6 +1,8 @@
 @php
     $flowMode = $flowMode ?? ($call->exists ? 'edit' : 'create');
     $isFinishFlow = $flowMode === 'finish';
+    $finalizeCall = ($finalizeCall ?? false) || ! $isFinishFlow || $call->outcome !== 'pending';
+    $isActiveNoteOnlyFinish = $isFinishFlow && ! $finalizeCall && $call->outcome === 'pending';
     $isCallerMode = request()->boolean('caller_mode');
     $isCreateFlow = $flowMode === 'create';
     $titleText = $isFinishFlow ? 'Ukoncit hovor' : ($call->exists ? 'Upravit hovor' : 'Novy hovor');
@@ -14,7 +16,13 @@
     <div class="mb-6">
         <h1 class="text-2xl font-semibold">{{ $titleText }}</h1>
         @if ($isFinishFlow)
-            <p class="text-sm text-slate-600">Dopln vysledek hovoru a zobrazime jen relevantni dalsi kroky.</p>
+            <p class="text-sm text-slate-600">
+                @if ($isActiveNoteOnlyFinish)
+                    Aktivni hovor: zatim zapisuj jen poznamku. Vysledek a dalsi kroky vyberes az pri ukonceni hovoru.
+                @else
+                    Dopln vysledek hovoru a zobrazime jen relevantni dalsi kroky.
+                @endif
+            </p>
         @else
             <p class="text-sm text-slate-600">Zaznam hovoru s poli pro navazujici kroky.</p>
             <p class="mt-1 text-xs text-slate-500">Pokud vyplnis follow-up / schuzku / predani, navazane zaznamy se po ulozeni vytvori automaticky.</p>
@@ -37,6 +45,9 @@
             @method('PUT')
         @endif
         <input type="hidden" name="flow_mode" value="{{ $flowMode }}">
+        @if ($isFinishFlow && $finalizeCall)
+            <input type="hidden" name="finalize_call" value="1">
+        @endif
         @if ($isCallerMode)
             <input type="hidden" name="caller_mode" value="1">
         @endif
@@ -69,21 +80,28 @@
             </div>
             <div>
                 <label for="outcome" class="block text-sm font-medium text-slate-700">Vysledek</label>
-                <select id="outcome" name="outcome" class="js-call-outcome mt-1 w-full rounded-md border-slate-300">
-                    @foreach (['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] as $outcome)
-                        <option value="{{ $outcome }}" @selected(old('outcome', $call->outcome ?: 'callback') === $outcome)>
-                            @switch($outcome)
-                                @case('pending') Rozpracovano @break
-                                @case('no-answer') Nezastizen @break
-                                @case('callback') Zavolat znovu @break
-                                @case('interested') Zajem @break
-                                @case('not-interested') Bez zajmu @break
-                                @case('meeting-booked') Schuzka domluvena @break
-                                @default {{ $outcome }}
-                            @endswitch
-                        </option>
-                    @endforeach
-                </select>
+                @if ($isActiveNoteOnlyFinish)
+                    <div class="mt-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                        Rozpracovano (vysledek vyberes az pri ukonceni hovoru)
+                    </div>
+                    <input type="hidden" name="outcome" value="pending">
+                @else
+                    <select id="outcome" name="outcome" class="js-call-outcome mt-1 w-full rounded-md border-slate-300">
+                        @foreach (['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] as $outcome)
+                            <option value="{{ $outcome }}" @selected(old('outcome', $call->outcome ?: 'callback') === $outcome)>
+                                @switch($outcome)
+                                    @case('pending') Rozpracovano @break
+                                    @case('no-answer') Nezastizen @break
+                                    @case('callback') Zavolat znovu @break
+                                    @case('interested') Zajem @break
+                                    @case('not-interested') Bez zajmu @break
+                                    @case('meeting-booked') Schuzka domluvena @break
+                                    @default {{ $outcome }}
+                                @endswitch
+                            </option>
+                        @endforeach
+                    </select>
+                @endif
                 @error('outcome')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -101,7 +119,7 @@
             </div>
         @endif
 
-        @if ($isFinishFlow)
+        @if ($isFinishFlow && $finalizeCall)
             <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -132,7 +150,7 @@
             </div>
         @endif
 
-        <div class="grid gap-6 sm:grid-cols-2">
+        <div class="grid gap-6 sm:grid-cols-2 {{ $isActiveNoteOnlyFinish ? 'hidden' : '' }}">
             <div class="js-call-panel js-panel-followup" data-show-for="callback,no-answer,interested">
                 <label for="next_follow_up_at" class="block text-sm font-medium text-slate-700">Dalsi follow-up</label>
                 <input id="next_follow_up_at" name="next_follow_up_at" type="datetime-local" value="{{ old('next_follow_up_at', optional($call->next_follow_up_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
@@ -150,7 +168,7 @@
             </div>
         </div>
 
-        <div class="grid gap-6 sm:grid-cols-2">
+        <div class="grid gap-6 sm:grid-cols-2 {{ $isActiveNoteOnlyFinish ? 'hidden' : '' }}">
             <div class="js-call-panel js-panel-handover" data-show-for="interested,meeting-booked">
                 <label for="handed_over_to_id" class="block text-sm font-medium text-slate-700">Predat komu</label>
                 <select id="handed_over_to_id" name="handed_over_to_id" class="mt-1 w-full rounded-md border-slate-300">
@@ -190,8 +208,15 @@
         @endunless
 
         <div class="flex flex-wrap items-center gap-3">
-            <button type="submit" class="rounded-md {{ $isFinishFlow ? 'bg-emerald-600' : 'bg-slate-900' }} px-4 py-2 text-sm font-medium text-white">{{ $submitText }}</button>
-            @if ($isFinishFlow && ! $isCallerMode)
+            @if ($isActiveNoteOnlyFinish)
+                <button type="submit" class="rounded-md bg-violet-700 px-4 py-2 text-sm font-medium text-white">Ulozit poznamku behem hovoru</button>
+                <a href="{{ route('calls.finish', ['call' => $call, 'finalize_call' => 1, 'caller_mode' => $isCallerMode ? 1 : null]) }}" class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white">
+                    Ukoncit hovor a vybrat vysledek
+                </a>
+            @else
+                <button type="submit" class="rounded-md {{ $isFinishFlow ? 'bg-emerald-600' : 'bg-slate-900' }} px-4 py-2 text-sm font-medium text-white">{{ $submitText }}</button>
+            @endif
+            @if ($isFinishFlow && ! $isCallerMode && ! $isActiveNoteOnlyFinish)
                 <button type="submit" name="submit_action" value="save_next_company" class="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white">
                     Ukoncit a dalsi firma
                 </button>
@@ -218,6 +243,7 @@
             const summaryInput = form.querySelector('#summary');
             const presetButtons = Array.from(form.querySelectorAll('.js-followup-preset'));
             const isFinishFlow = {{ $isFinishFlow ? 'true' : 'false' }};
+            const finalizeCall = {{ $finalizeCall ? 'true' : 'false' }};
             const callId = {{ $call->exists ? (int) $call->id : 'null' }};
             const draftKey = callId ? ('call-finish-summary-draft:' + String(callId)) : null;
             let autosaveTimer = null;
@@ -270,7 +296,7 @@
             };
 
             const applySmartDefaults = function (outcome) {
-                if (!isFinishFlow) return;
+                if (!isFinishFlow || !finalizeCall) return;
 
                 if ((outcome === 'callback' || outcome === 'no-answer') && !hasValue(followUpInput)) {
                     const now = new Date();
@@ -323,12 +349,12 @@
                         .map((value) => value.trim())
                         .filter(Boolean);
 
-                    const visible = !isFinishFlow || showFor.length === 0 || showFor.includes(outcome);
+                    const visible = !isFinishFlow || !finalizeCall || showFor.length === 0 || showFor.includes(outcome);
                     panel.classList.toggle('hidden', !visible);
                 });
 
                 if (callbackPresetsWrap) {
-                    const showPresets = isFinishFlow && (outcome === 'callback' || outcome === 'no-answer');
+                    const showPresets = isFinishFlow && finalizeCall && (outcome === 'callback' || outcome === 'no-answer');
                     callbackPresetsWrap.classList.toggle('hidden', !showPresets);
                 }
 
@@ -380,7 +406,7 @@
             }
 
             document.addEventListener('keydown', function (event) {
-                if (!isFinishFlow || !callbackPresetsWrap || callbackPresetsWrap.classList.contains('hidden')) return;
+                if (!isFinishFlow || !finalizeCall || !callbackPresetsWrap || callbackPresetsWrap.classList.contains('hidden')) return;
                 if (!event.altKey || event.ctrlKey || event.metaKey) return;
 
                 const target = event.target;

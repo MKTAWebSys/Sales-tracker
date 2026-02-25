@@ -50,6 +50,18 @@
         }
     @endphp
 
+    @php
+        $activeCallBanner = null;
+        if (auth()->check()) {
+            $activeCallBanner = \App\Models\Call::query()
+                ->with('company:id,name')
+                ->where('caller_id', auth()->id())
+                ->where('outcome', 'pending')
+                ->latest('called_at')
+                ->first();
+        }
+    @endphp
+
     <div class="min-h-screen lg:grid lg:grid-cols-[18rem_1fr]">
         <aside class="border-b border-slate-200 bg-white lg:min-h-screen lg:border-b-0 lg:border-r">
             <div class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur supports-[backdrop-filter]:bg-white/80 lg:px-5">
@@ -88,6 +100,29 @@
 
         <div class="min-w-0">
             <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+                @if ($activeCallBanner)
+                    <div class="mb-4 rounded-xl border border-violet-200 bg-violet-50/80 p-4 text-sm text-violet-900 shadow-sm ring-1 ring-violet-100">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <div class="font-semibold">Probiha hovor</div>
+                                <div class="mt-1">
+                                    {{ $activeCallBanner->company?->name ?? 'Bez firmy' }}
+                                    | start {{ $activeCallBanner->called_at?->format('Y-m-d H:i:s') ?? '-' }}
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <a href="{{ route('calls.finish', ['call' => $activeCallBanner, 'caller_mode' => request()->routeIs('caller-mode.*') ? 1 : null]) }}"
+                                   class="rounded-md bg-violet-700 px-3 py-2 text-xs font-medium text-white">
+                                    Zapsat poznamku / vratit se k hovoru
+                                </a>
+                                <a href="{{ route('calls.finish', ['call' => $activeCallBanner, 'finalize_call' => 1, 'caller_mode' => request()->routeIs('caller-mode.*') ? 1 : null]) }}"
+                                   class="rounded-md bg-white px-3 py-2 text-xs font-medium text-violet-800 ring-1 ring-violet-200">
+                                    Ukoncit hovor
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                @endif
                 @yield('content')
             </main>
         </div>
@@ -171,6 +206,30 @@
                 }
             }, 0);
         });
+
+        @if ($activeCallBanner)
+            document.addEventListener('DOMContentLoaded', function () {
+                const activeCallReturnUrl = @json(route('calls.finish', ['call' => $activeCallBanner]));
+                const activeCompanyId = @json((int) $activeCallBanner->company_id);
+
+                document.querySelectorAll('a[href*="/start-call"]').forEach(function (link) {
+                    const href = String(link.getAttribute('href') || '');
+                    if (!href) return;
+                    if (href.includes('/companies/' + activeCompanyId + '/start-call')) {
+                        return;
+                    }
+
+                    link.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-auto');
+                    link.setAttribute('aria-disabled', 'true');
+                    link.setAttribute('title', 'Mate aktivni hovor. Nejdriv se vratte k nemu.');
+
+                    link.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        window.location.href = activeCallReturnUrl;
+                    });
+                });
+            });
+        @endif
 
         window.setTimeout(function () {
             const toast = document.getElementById('crm-status-toast');
