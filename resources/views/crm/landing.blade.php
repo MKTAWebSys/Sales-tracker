@@ -8,6 +8,17 @@
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100">
     <div class="mx-auto flex min-h-screen max-w-5xl flex-col justify-center px-6 py-16">
+        <div class="mb-6 flex items-center justify-end">
+            @auth
+                <a href="{{ route('dashboard') }}" class="rounded-md bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950">
+                    Otevrit CRM
+                </a>
+            @else
+                <a href="{{ route('login') }}" class="rounded-md bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950">
+                    Prihlasit se
+                </a>
+            @endauth
+        </div>
         <p class="mb-4 text-sm uppercase tracking-[0.2em] text-cyan-300">Laravel + Blade + Breeze</p>
         <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">Call CRM MVP</h1>
         <p class="mt-6 max-w-2xl text-base leading-7 text-slate-300">

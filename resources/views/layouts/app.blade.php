@@ -32,5 +32,19 @@
                 {{ $slot }}
             </main>
         </div>
+        <script>
+            document.addEventListener('pointerdown', function (event) {
+                const input = event.target.closest('input[type="date"], input[type="datetime-local"], input[type="time"]');
+                if (!input) return;
+                if (typeof input.showPicker !== 'function') return;
+
+                window.setTimeout(function () {
+                    try {
+                        input.showPicker();
+                    } catch (error) {
+                    }
+                }, 0);
+            });
+        </script>
     </body>
 </html>

@@ -2,6 +2,45 @@
 
 Pracovni plan pro prvni verzi interni webove aplikace `Call CRM MVP`.
 
+## Aktualni stav (prubezny zapis)
+
+### Hotovo (aktualni stav kodu)
+
+- CRM MVP moduly: firmy, hovory, follow-upy, predani leadu, schuzky (list/detail/form workflow)
+- CRM dashboard s prokliky do filtru a prioritami follow-upu
+- Multi-user workflow:
+  - role `manager` / `caller`
+  - `Moje firmy`, `Moje follow-upy`, fronta uzivatele
+  - admin prepinac dashboard pohledu na jineho uzivatele
+- Call workflow:
+  - `Zahajit hovor` z detailu firmy i ze seznamu firem
+  - dokonceni hovoru s navazujicimi akcemi
+  - `Ukoncit a dalsi firma`
+  - `Odlozit + dalsi firma`
+  - guard proti preskakovani firmy ve stavu `new`
+- Inline rychle zmeny stavu/vysledku v seznamech:
+  - firmy, hovory, follow-upy, predani leadu, schuzky
+  - potvrzovaci tlacitko `OK` se zobrazi az po zmene hodnoty
+- UI/UX zlepseni:
+  - sticky horni menu
+  - row click do detailu
+  - toast notifikace vlevo dole
+  - datumova pole otevrou picker klikem do celeho pole
+  - timeline firmy: zvyraznena posledni aktivita + rozbaleni delsi poznamky
+- Admin sprava uzivatelu (samostatne menu `Uzivatele`):
+  - pridat / upravit / smazat
+  - verejna registrace vypnuta
+- Cile obvolani na uzivateli (`pocet firem` + `termin`) a zobrazeni v dashboardu / firmach
+- Demo seedery (vcetne dat pro `petr.zvelebil@awebsys.cz`)
+
+### Co melo nasledovat (dalsi rozumne kroky)
+
+- Doladit inline edit i pro dalsi pole (napr. prirazeny uzivatel u follow-upu/firem)
+- Dodelat / zjemnit ceske popisky v inline selectech (misto internich enum hodnot)
+- Pridat rychle outcome akce pro call queue (napr. `Nezastizen + dalsi firma`)
+- Dopsat testy pro quick actions / queue workflow / admin user management
+- Uklidit backup `routes/auth.php.bak` (lokalni pomocny soubor, necommitovat)
+
 ## 1) Data model
 
 - Navrhnout entity a vazby:

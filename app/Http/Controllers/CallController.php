@@ -16,6 +16,7 @@ use Illuminate\View\View;
 class CallController extends Controller
 {
     private const COMPANY_STATUSES = ['new', 'contacted', 'follow-up', 'qualified', 'lost'];
+    private const OUTCOMES = ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'];
 
     public function index(Request $request): View
     {
@@ -160,6 +161,27 @@ class CallController extends Controller
         return redirect()
             ->route('calls.show', $call)
             ->with('status', $statusMessage);
+    }
+
+    public function quickOutcome(Request $request, Call $call): RedirectResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        if (! $user->isManager() && $call->caller_id && $call->caller_id !== $user->id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'outcome' => ['required', 'in:'.implode(',', self::OUTCOMES)],
+        ]);
+
+        $call->update(['outcome' => $data['outcome']]);
+
+        return redirect()->to(url()->previous() ?: route('calls.index'))
+            ->with('status', 'Vysledek hovoru byl rychle upraven.');
     }
 
     private function validateCall(Request $request): array

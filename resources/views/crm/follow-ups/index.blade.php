@@ -115,8 +115,24 @@
                         </td>
                         <td class="px-4 py-3 font-medium">{{ $followUp->company?->name ?? '-' }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $followUp->due_at?->format('Y-m-d H:i') }}</td>
-                        <td class="px-4 py-3">
-                            @include('crm.partials.status-badge', ['context' => 'follow-up', 'value' => $followUp->status])
+                        <td class="px-4 py-3" data-row-link-ignore>
+                            @php
+                                $statusSelectClass = match ($followUp->status) {
+                                    'open' => ($followUp->due_at && $followUp->due_at->isPast()) ? 'bg-rose-50 text-rose-900 border-rose-300' : 'bg-amber-50 text-amber-900 border-amber-300',
+                                    'done' => 'bg-emerald-50 text-emerald-900 border-emerald-300',
+                                    'cancelled' => 'bg-slate-50 text-slate-900 border-slate-300',
+                                    default => 'bg-slate-50 text-slate-900 border-slate-300',
+                                };
+                            @endphp
+                            <form method="POST" action="{{ route('follow-ups.quick-status', $followUp) }}" class="js-inline-save-form flex items-center gap-2" data-row-link-ignore>
+                                @csrf
+                                <select name="status" class="js-inline-save-select min-w-32 rounded-md py-1 text-xs {{ $statusSelectClass }}" data-row-link-ignore data-initial-value="{{ $followUp->status }}">
+                                    @foreach (['open', 'done', 'cancelled'] as $statusOption)
+                                        <option value="{{ $statusOption }}" @selected($followUp->status === $statusOption)>{{ $statusOption }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="js-inline-save-btn invisible rounded-md bg-slate-700 px-2 py-1 text-xs font-medium text-white" data-row-link-ignore>OK</button>
+                            </form>
                         </td>
                         <td class="px-4 py-3 text-slate-600">{{ $followUp->assignedUser?->name ?? '-' }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $followUp->call_id ?: '-' }}</td>

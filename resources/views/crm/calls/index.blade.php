@@ -75,8 +75,26 @@
                     <tr class="{{ $rowClass }} cursor-pointer hover:brightness-[0.99]" data-row-link="{{ route('calls.show', $call) }}">
                         <td class="px-4 py-3 font-medium">{{ $call->company?->name ?? '-' }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $call->called_at?->format('Y-m-d H:i') }}</td>
-                        <td class="px-4 py-3">
-                            @include('crm.partials.call-outcome-badge', ['outcome' => $call->outcome])
+                        <td class="px-4 py-3" data-row-link-ignore>
+                            <form method="POST" action="{{ route('calls.quick-outcome', $call) }}" class="js-inline-save-form flex items-center gap-2" data-row-link-ignore>
+                                @csrf
+                                @php
+                                    $outcomeSelectClass = match ($call->outcome) {
+                                        'pending' => 'bg-violet-50 text-violet-900 border-violet-300',
+                                        'meeting-booked' => 'bg-emerald-50 text-emerald-900 border-emerald-300',
+                                        'interested' => 'bg-blue-50 text-blue-900 border-blue-300',
+                                        'callback' => 'bg-amber-50 text-amber-900 border-amber-300',
+                                        'not-interested' => 'bg-rose-50 text-rose-900 border-rose-300',
+                                        default => 'bg-slate-50 text-slate-900 border-slate-300',
+                                    };
+                                @endphp
+                                <select name="outcome" class="js-inline-save-select min-w-40 rounded-md py-1 text-xs {{ $outcomeSelectClass }}" data-row-link-ignore data-initial-value="{{ $call->outcome }}">
+                                    @foreach (['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] as $outcome)
+                                        <option value="{{ $outcome }}" @selected($call->outcome === $outcome)>{{ $outcome }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="js-inline-save-btn invisible rounded-md bg-slate-700 px-2 py-1 text-xs font-medium text-white" data-row-link-ignore>OK</button>
+                            </form>
                         </td>
                         <td class="px-4 py-3 text-slate-600">{{ $call->caller?->name ?? '-' }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $call->next_follow_up_at?->format('Y-m-d H:i') ?: '-' }}</td>

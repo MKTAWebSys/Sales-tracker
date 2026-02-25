@@ -7,7 +7,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
-    <header class="border-b border-slate-200 bg-white">
+    <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
             <div>
                 <a href="{{ route('home') }}" class="text-lg font-semibold">Call CRM</a>
@@ -40,6 +40,14 @@
                         {{ $label }}
                     </a>
                 @endforeach
+
+                @auth
+                    @if (auth()->user()?->isManager())
+                        <a href="{{ route('users.index') }}" class="rounded-md px-3 py-2 {{ request()->routeIs('users.*') ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' }}">
+                            Uzivatele
+                        </a>
+                    @endif
+                @endauth
             </nav>
         </div>
     </header>
@@ -87,6 +95,46 @@
             if (!close) return;
             const toast = close.closest('#crm-status-toast');
             if (toast) toast.remove();
+        });
+
+        document.addEventListener('change', function (event) {
+            const select = event.target.closest('.js-inline-save-select');
+            if (!select) return;
+
+            const form = select.closest('.js-inline-save-form');
+            const button = form ? form.querySelector('.js-inline-save-btn') : null;
+            if (!button) return;
+
+            const initial = String(select.getAttribute('data-initial-value') ?? '');
+            const current = String(select.value ?? '');
+            const changed = initial !== current;
+
+            button.classList.toggle('invisible', !changed);
+        });
+
+        document.addEventListener('submit', function (event) {
+            const form = event.target.closest('.js-inline-save-form');
+            if (!form) return;
+            const button = form.querySelector('.js-inline-save-btn');
+            if (!button) return;
+            button.disabled = true;
+            button.classList.remove('invisible');
+            button.textContent = '...';
+        });
+
+        document.addEventListener('pointerdown', function (event) {
+            const input = event.target.closest('input[type="date"], input[type="datetime-local"], input[type="time"]');
+            if (!input) return;
+            if (typeof input.showPicker !== 'function') return;
+
+            // Let the browser focus the field first, then open the picker from the whole input area.
+            window.setTimeout(function () {
+                try {
+                    input.showPicker();
+                } catch (error) {
+                    // Some browsers block repeated picker calls; ignore and keep default behavior.
+                }
+            }, 0);
         });
 
         window.setTimeout(function () {

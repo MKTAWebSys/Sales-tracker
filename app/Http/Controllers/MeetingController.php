@@ -11,6 +11,8 @@ use Illuminate\View\View;
 
 class MeetingController extends Controller
 {
+    private const QUICK_STATUSES = ['planned', 'confirmed', 'done', 'cancelled'];
+
     public function index(Request $request): View
     {
         $query = Meeting::query()
@@ -87,6 +89,21 @@ class MeetingController extends Controller
         return redirect()
             ->route('meetings.show', $meeting)
             ->with('status', 'Schůzka byla upravena.');
+    }
+
+    public function quickStatus(Request $request, Meeting $meeting): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', 'in:'.implode(',', self::QUICK_STATUSES)],
+        ]);
+
+        $meeting->update([
+            'status' => $data['status'],
+        ]);
+
+        return redirect()
+            ->to(url()->previous() ?: route('meetings.index'))
+            ->with('status', 'Stav schuzky byl rychle upraven.');
     }
 
     private function validateMeeting(Request $request): array

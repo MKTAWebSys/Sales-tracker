@@ -103,14 +103,14 @@
                         <td class="px-4 py-3 font-medium">{{ $company->name }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $company->ico ?: '-' }}</td>
                         <td class="px-4 py-3" data-row-link-ignore>
-                            <form method="POST" action="{{ route('companies.quick-status', $company) }}" class="flex items-center gap-2" data-row-link-ignore>
+                            <form method="POST" action="{{ route('companies.quick-status', $company) }}" class="js-inline-save-form flex items-center gap-2" data-row-link-ignore>
                                 @csrf
-                                <select name="status" class="min-w-36 rounded-md py-1 text-xs {{ $statusSelectClass }}" data-row-link-ignore>
+                                <select name="status" class="js-inline-save-select min-w-36 rounded-md py-1 text-xs {{ $statusSelectClass }}" data-row-link-ignore data-initial-value="{{ $company->status }}">
                                     @foreach (['new', 'contacted', 'follow-up', 'qualified', 'lost'] as $statusOption)
                                         <option value="{{ $statusOption }}" @selected($company->status === $statusOption)>{{ $statusOption }}</option>
                                     @endforeach
                                 </select>
-                                <button type="submit" class="rounded-md bg-slate-700 px-2 py-1 text-xs font-medium text-white" data-row-link-ignore>
+                                <button type="submit" class="js-inline-save-btn invisible rounded-md bg-slate-700 px-2 py-1 text-xs font-medium text-white" data-row-link-ignore>
                                     OK
                                 </button>
                             </form>

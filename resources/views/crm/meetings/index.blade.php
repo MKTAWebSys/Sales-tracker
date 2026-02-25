@@ -65,8 +65,25 @@
                         <td class="px-4 py-3 font-medium">{{ $meeting->company?->name ?? '-' }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $meeting->scheduled_at?->format('Y-m-d H:i') ?: '-' }}</td>
                         <td class="px-4 py-3">{{ $meeting->mode }}</td>
-                        <td class="px-4 py-3">
-                            @include('crm.partials.status-badge', ['context' => 'meeting', 'value' => $meeting->status])
+                        <td class="px-4 py-3" data-row-link-ignore>
+                            @php
+                                $statusSelectClass = match ($meeting->status) {
+                                    'confirmed' => 'bg-emerald-50 text-emerald-900 border-emerald-300',
+                                    'planned' => 'bg-blue-50 text-blue-900 border-blue-300',
+                                    'cancelled' => 'bg-rose-50 text-rose-900 border-rose-300',
+                                    'done' => 'bg-slate-50 text-slate-900 border-slate-300',
+                                    default => 'bg-slate-50 text-slate-900 border-slate-300',
+                                };
+                            @endphp
+                            <form method="POST" action="{{ route('meetings.quick-status', $meeting) }}" class="js-inline-save-form flex items-center gap-2" data-row-link-ignore>
+                                @csrf
+                                <select name="status" class="js-inline-save-select min-w-32 rounded-md py-1 text-xs {{ $statusSelectClass }}" data-row-link-ignore data-initial-value="{{ $meeting->status }}">
+                                    @foreach (['planned', 'confirmed', 'done', 'cancelled'] as $statusOption)
+                                        <option value="{{ $statusOption }}" @selected($meeting->status === $statusOption)>{{ $statusOption }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="js-inline-save-btn invisible rounded-md bg-slate-700 px-2 py-1 text-xs font-medium text-white" data-row-link-ignore>OK</button>
+                            </form>
                         </td>
                         <td class="px-4 py-3 text-slate-600">
                             @if ($meeting->call_id)

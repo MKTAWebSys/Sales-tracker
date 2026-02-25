@@ -12,6 +12,8 @@ use Illuminate\View\View;
 
 class LeadTransferController extends Controller
 {
+    private const QUICK_STATUSES = ['pending', 'accepted', 'done', 'cancelled'];
+
     public function index(Request $request): View
     {
         $query = LeadTransfer::query()
@@ -101,6 +103,21 @@ class LeadTransferController extends Controller
         return redirect()
             ->route('lead-transfers.show', $leadTransfer)
             ->with('status', 'Předání leadu bylo upraveno.');
+    }
+
+    public function quickStatus(Request $request, LeadTransfer $leadTransfer): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', 'in:'.implode(',', self::QUICK_STATUSES)],
+        ]);
+
+        $leadTransfer->update([
+            'status' => $data['status'],
+        ]);
+
+        return redirect()
+            ->to(url()->previous() ?: route('lead-transfers.index'))
+            ->with('status', 'Stav predani leadu byl rychle upraven.');
     }
 
     private function validateLeadTransfer(Request $request): array

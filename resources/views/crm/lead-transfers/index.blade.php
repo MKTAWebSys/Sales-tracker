@@ -85,8 +85,25 @@
                         <td class="px-4 py-3 text-slate-600">{{ $leadTransfer->transferred_at?->format('Y-m-d H:i') ?: '-' }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $leadTransfer->fromUser?->name ?? '-' }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $leadTransfer->toUser?->name ?? '-' }}</td>
-                        <td class="px-4 py-3">
-                            @include('crm.partials.status-badge', ['context' => 'lead-transfer', 'value' => $leadTransfer->status])
+                        <td class="px-4 py-3" data-row-link-ignore>
+                            @php
+                                $statusSelectClass = match ($leadTransfer->status) {
+                                    'done' => 'bg-emerald-50 text-emerald-900 border-emerald-300',
+                                    'accepted' => 'bg-blue-50 text-blue-900 border-blue-300',
+                                    'pending' => 'bg-amber-50 text-amber-900 border-amber-300',
+                                    'cancelled' => 'bg-slate-50 text-slate-900 border-slate-300',
+                                    default => 'bg-slate-50 text-slate-900 border-slate-300',
+                                };
+                            @endphp
+                            <form method="POST" action="{{ route('lead-transfers.quick-status', $leadTransfer) }}" class="js-inline-save-form flex items-center gap-2" data-row-link-ignore>
+                                @csrf
+                                <select name="status" class="js-inline-save-select min-w-32 rounded-md py-1 text-xs {{ $statusSelectClass }}" data-row-link-ignore data-initial-value="{{ $leadTransfer->status }}">
+                                    @foreach (['pending', 'accepted', 'done', 'cancelled'] as $statusOption)
+                                        <option value="{{ $statusOption }}" @selected($leadTransfer->status === $statusOption)>{{ $statusOption }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="js-inline-save-btn invisible rounded-md bg-slate-700 px-2 py-1 text-xs font-medium text-white" data-row-link-ignore>OK</button>
+                            </form>
                         </td>
                         <td class="px-4 py-3 text-slate-600">
                             @if ($leadTransfer->call_id)

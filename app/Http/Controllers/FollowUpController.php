@@ -12,6 +12,8 @@ use Illuminate\View\View;
 
 class FollowUpController extends Controller
 {
+    private const QUICK_STATUSES = ['open', 'done', 'cancelled'];
+
     public function index(Request $request): View
     {
         $query = FollowUp::query()
@@ -152,6 +154,34 @@ class FollowUpController extends Controller
         return redirect()
             ->route('follow-ups.index', $request->except('_token', 'follow_up_ids'))
             ->with('status', "Označeno jako hotové: {$updated} follow-upů.");
+    }
+
+    public function quickStatus(Request $request, FollowUp $followUp): RedirectResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        if (! $user->isManager() && $followUp->assigned_user_id !== $user->id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'status' => ['required', 'in:'.implode(',', self::QUICK_STATUSES)],
+        ]);
+
+        $status = $data['status'];
+        $followUp->update([
+            'status' => $status,
+            'completed_at' => $status === 'done'
+                ? ($followUp->completed_at ?? now())
+                : null,
+        ]);
+
+        return redirect()
+            ->to(url()->previous() ?: route('follow-ups.index'))
+            ->with('status', 'Stav follow-upu byl rychle upraven.');
     }
 
     private function validateFollowUp(Request $request): array

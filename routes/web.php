@@ -8,6 +8,7 @@ use App\Http\Controllers\ImportController;
 use App\Http\Controllers\LeadTransferController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -36,6 +37,7 @@ Route::middleware('auth')->group(function () {
         'edit',
         'update',
     ]);
+    Route::post('/calls/{call}/quick-outcome', [CallController::class, 'quickOutcome'])->name('calls.quick-outcome');
     Route::match(['get', 'post'], '/companies/{company}/start-call', [CallController::class, 'quickStart'])->name('companies.calls.start');
     Route::get('/calls/{call}/finish', [CallController::class, 'finish'])->name('calls.finish');
     Route::resource('follow-ups', FollowUpController::class)->only([
@@ -46,6 +48,7 @@ Route::middleware('auth')->group(function () {
         'edit',
         'update',
     ]);
+    Route::post('/follow-ups/{followUp}/quick-status', [FollowUpController::class, 'quickStatus'])->name('follow-ups.quick-status');
     Route::post('/follow-ups/bulk-complete', [FollowUpController::class, 'bulkComplete'])->name('follow-ups.bulk-complete');
     Route::get('/imports/xlsx', [ImportController::class, 'xlsx'])->name('imports.xlsx');
     Route::resource('lead-transfers', LeadTransferController::class)->only([
@@ -56,6 +59,7 @@ Route::middleware('auth')->group(function () {
         'edit',
         'update',
     ]);
+    Route::post('/lead-transfers/{leadTransfer}/quick-status', [LeadTransferController::class, 'quickStatus'])->name('lead-transfers.quick-status');
     Route::resource('meetings', MeetingController::class)->only([
         'index',
         'create',
@@ -64,6 +68,8 @@ Route::middleware('auth')->group(function () {
         'edit',
         'update',
     ]);
+    Route::post('/meetings/{meeting}/quick-status', [MeetingController::class, 'quickStatus'])->name('meetings.quick-status');
+    Route::resource('users', UserManagementController::class)->except(['show']);
 
     // Breeze profile routes can stay alongside CRM modules.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
