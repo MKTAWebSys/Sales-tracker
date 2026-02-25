@@ -7,55 +7,82 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
-    <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-            <div>
-                <a href="{{ route('home') }}" class="text-lg font-semibold">Call CRM</a>
-                <p class="text-xs text-slate-500">MVP evidence obchodnich callu</p>
-            </div>
-            <nav class="flex flex-wrap items-center gap-2 text-sm">
-                @php
-                    $links = [
-                        ['Dashboard', 'dashboard'],
-                        ['Moje fronta', 'companies.queue.mine'],
-                        ['Firmy', 'companies.index'],
-                        ['Hovory', 'calls.index'],
-                        ['Follow-upy', 'follow-ups.index'],
-                        ['Predani leadu', 'lead-transfers.index'],
-                        ['Schuzky', 'meetings.index'],
-                    ];
+    @php
+        $currentCompanyParam = request()->route('company');
+        $currentCompanyId = is_object($currentCompanyParam) ? ($currentCompanyParam->id ?? null) : (is_numeric($currentCompanyParam) ? (int) $currentCompanyParam : null);
 
-                    $currentCompanyParam = request()->route('company');
-                    $currentCompanyId = is_object($currentCompanyParam) ? ($currentCompanyParam->id ?? null) : (is_numeric($currentCompanyParam) ? (int) $currentCompanyParam : null);
-                @endphp
+        $navSections = [
+            [
+                'title' => 'Prace',
+                'links' => [
+                    ['Dashboard', 'dashboard'],
+                    ['Moje fronta', 'companies.queue.mine'],
+                    ['Firmy', 'companies.index'],
+                ],
+            ],
+            [
+                'title' => 'Aktivity',
+                'links' => [
+                    ['Hovory', 'calls.index'],
+                    ['Follow-upy', 'follow-ups.index'],
+                    ['Predani leadu', 'lead-transfers.index'],
+                    ['Schuzky', 'meetings.index'],
+                ],
+            ],
+        ];
 
-                @auth
-                    <a href="{{ route('companies.next-mine', array_filter(['current_company_id' => $currentCompanyId, 'skip_lost' => 1])) }}"
-                       class="rounded-md bg-emerald-600 px-3 py-2 font-medium text-white hover:bg-emerald-700">
-                        Moje dalsi firma
-                    </a>
-                @endauth
+        if (auth()->check() && auth()->user()?->isManager()) {
+            $navSections[] = [
+                'title' => 'Sprava',
+                'links' => [
+                    ['Uzivatele', 'users.index'],
+                ],
+            ];
+        }
+    @endphp
 
-                @foreach ($links as [$label, $routeName])
-                    <a href="{{ route($routeName) }}" class="rounded-md px-3 py-2 {{ request()->routeIs($routeName) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' }}">
-                        {{ $label }}
-                    </a>
-                @endforeach
-
-                @auth
-                    @if (auth()->user()?->isManager())
-                        <a href="{{ route('users.index') }}" class="rounded-md px-3 py-2 {{ request()->routeIs('users.*') ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' }}">
-                            Uzivatele
+    <div class="min-h-screen lg:grid lg:grid-cols-[18rem_1fr]">
+        <aside class="border-b border-slate-200 bg-white lg:min-h-screen lg:border-b-0 lg:border-r">
+            <div class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur supports-[backdrop-filter]:bg-white/80 lg:px-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <a href="{{ route('home') }}" class="text-lg font-semibold">Call CRM</a>
+                        <p class="text-xs text-slate-500">MVP evidence obchodnich callu</p>
+                    </div>
+                    @auth
+                        <a href="{{ route('companies.next-mine', array_filter(['current_company_id' => $currentCompanyId, 'skip_lost' => 1])) }}"
+                           class="rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700">
+                            Dalsi firma
                         </a>
-                    @endif
-                @endauth
-            </nav>
-        </div>
-    </header>
+                    @endauth
+                </div>
+            </div>
 
-    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        @yield('content')
-    </main>
+            <nav class="px-4 py-4 lg:px-5">
+                <div class="space-y-5">
+                    @foreach ($navSections as $section)
+                        <div>
+                            <div class="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ $section['title'] }}</div>
+                            <div class="space-y-1">
+                                @foreach ($section['links'] as [$label, $routeName])
+                                    <a href="{{ route($routeName) }}"
+                                       class="block rounded-md px-3 py-2 text-sm {{ request()->routeIs($routeName) ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100' }}">
+                                        {{ $label }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </nav>
+        </aside>
+
+        <div class="min-w-0">
+            <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+                @yield('content')
+            </main>
+        </div>
+    </div>
 
     @if (session('status'))
         <div
@@ -68,7 +95,7 @@
                 <div class="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500"></div>
                 <div class="min-w-0 flex-1">{{ session('status') }}</div>
                 <button type="button" class="shrink-0 text-emerald-700 hover:text-emerald-900" aria-label="Zavrit hlasku" data-toast-close>
-                    ×
+                    x
                 </button>
             </div>
         </div>
@@ -128,12 +155,10 @@
             if (!input) return;
             if (typeof input.showPicker !== 'function') return;
 
-            // Let the browser focus the field first, then open the picker from the whole input area.
             window.setTimeout(function () {
                 try {
                     input.showPicker();
                 } catch (error) {
-                    // Some browsers block repeated picker calls; ignore and keep default behavior.
                 }
             }, 0);
         });

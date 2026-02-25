@@ -13,12 +13,10 @@
     <div class="mb-6">
         <h1 class="text-2xl font-semibold">{{ $titleText }}</h1>
         @if ($isFinishFlow)
-            <p class="text-sm text-slate-600">Dopln vysledek hovoru, poznamku a navazujici kroky. Cas startu uz je zaevidovany.</p>
+            <p class="text-sm text-slate-600">Dopln vysledek hovoru a zobrazime jen relevantni dalsi kroky.</p>
         @else
             <p class="text-sm text-slate-600">Zaznam hovoru s poli pro navazujici kroky.</p>
-            <p class="mt-1 text-xs text-slate-500">
-                Pokud vyplnis follow-up / schuzku / predani, navazane zaznamy se po ulozeni vytvori automaticky.
-            </p>
+            <p class="mt-1 text-xs text-slate-500">Pokud vyplnis follow-up / schuzku / predani, navazane zaznamy se po ulozeni vytvori automaticky.</p>
         @endif
     </div>
 
@@ -32,7 +30,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ $call->exists ? route('calls.update', $call) : route('calls.store') }}" class="space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <form method="POST" action="{{ $call->exists ? route('calls.update', $call) : route('calls.store') }}" class="js-call-flow-form space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         @csrf
         @if ($call->exists)
             @method('PUT')
@@ -67,7 +65,7 @@
             </div>
             <div>
                 <label for="outcome" class="block text-sm font-medium text-slate-700">Vysledek</label>
-                <select id="outcome" name="outcome" class="mt-1 w-full rounded-md border-slate-300">
+                <select id="outcome" name="outcome" class="js-call-outcome mt-1 w-full rounded-md border-slate-300">
                     @foreach (['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] as $outcome)
                         <option value="{{ $outcome }}" @selected(old('outcome', $call->outcome ?: 'callback') === $outcome)>
                             @switch($outcome)
@@ -88,8 +86,34 @@
             </div>
         </div>
 
+        @if ($isFinishFlow)
+            <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Dalsi krok po hovoru</h2>
+                        <p class="mt-1 text-sm text-slate-600">Formular zobrazi jen pole, ktera typicky davas k vybranemu vysledku.</p>
+                    </div>
+                </div>
+
+                <div class="js-callback-presets mt-4 hidden">
+                    <div class="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">Rychly termin pro znovu zavolat</div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" class="js-followup-preset rounded-md bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200" data-preset="today_afternoon">
+                            Dnes odpoledne (15:00)
+                        </button>
+                        <button type="button" class="js-followup-preset rounded-md bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200" data-preset="tomorrow_morning">
+                            Zitra dopoledne (09:00)
+                        </button>
+                        <button type="button" class="js-followup-preset rounded-md bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200" data-preset="tomorrow_afternoon">
+                            Zitra odpoledne (15:00)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <div class="grid gap-6 sm:grid-cols-2">
-            <div>
+            <div class="js-call-panel js-panel-followup" data-show-for="callback,no-answer,interested">
                 <label for="next_follow_up_at" class="block text-sm font-medium text-slate-700">Dalsi follow-up</label>
                 <input id="next_follow_up_at" name="next_follow_up_at" type="datetime-local" value="{{ old('next_follow_up_at', optional($call->next_follow_up_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
                 <p class="mt-1 text-xs text-slate-500">Po vyplneni se firma automaticky prepne do stavu follow-up (pokud nezvolis jiny stav niz).</p>
@@ -97,7 +121,7 @@
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
-            <div>
+            <div class="js-call-panel js-panel-meeting" data-show-for="meeting-booked,interested">
                 <label for="meeting_planned_at" class="block text-sm font-medium text-slate-700">Planovana schuzka</label>
                 <input id="meeting_planned_at" name="meeting_planned_at" type="datetime-local" value="{{ old('meeting_planned_at', optional($call->meeting_planned_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
                 @error('meeting_planned_at')
@@ -107,7 +131,7 @@
         </div>
 
         <div class="grid gap-6 sm:grid-cols-2">
-            <div>
+            <div class="js-call-panel js-panel-handover" data-show-for="interested,meeting-booked">
                 <label for="handed_over_to_id" class="block text-sm font-medium text-slate-700">Predat komu</label>
                 <select id="handed_over_to_id" name="handed_over_to_id" class="mt-1 w-full rounded-md border-slate-300">
                     <option value="">Bez predani</option>
@@ -121,7 +145,7 @@
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
-            <div>
+            <div class="js-call-panel js-panel-status" data-show-for="callback,no-answer,interested,not-interested,meeting-booked">
                 <label for="company_status" class="block text-sm font-medium text-slate-700">Zmenit stav firmy</label>
                 <select id="company_status" name="company_status" class="mt-1 w-full rounded-md border-slate-300">
                     <option value="">Beze zmeny (nebo auto follow-up)</option>
@@ -157,4 +181,88 @@
             @endif
         </div>
     </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.querySelector('.js-call-flow-form');
+            if (!form) return;
+
+            const outcomeSelect = form.querySelector('.js-call-outcome');
+            const panels = Array.from(form.querySelectorAll('.js-call-panel'));
+            const callbackPresetsWrap = form.querySelector('.js-callback-presets');
+            const followUpInput = form.querySelector('#next_follow_up_at');
+            const statusInput = form.querySelector('#company_status');
+            const presetButtons = Array.from(form.querySelectorAll('.js-followup-preset'));
+            const isFinishFlow = {{ $isFinishFlow ? 'true' : 'false' }};
+
+            const setDateValue = function (date) {
+                const pad = (num) => String(num).padStart(2, '0');
+                const local = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+                followUpInput.value = local.toISOString().slice(0, 16);
+            };
+
+            const applyPreset = function (preset) {
+                if (!followUpInput) return;
+
+                const now = new Date();
+                const target = new Date();
+
+                if (preset === 'today_afternoon') {
+                    target.setHours(15, 0, 0, 0);
+                    if (target <= now) {
+                        target.setDate(target.getDate() + 1);
+                    }
+                }
+                if (preset === 'tomorrow_morning') {
+                    target.setDate(target.getDate() + 1);
+                    target.setHours(9, 0, 0, 0);
+                }
+                if (preset === 'tomorrow_afternoon') {
+                    target.setDate(target.getDate() + 1);
+                    target.setHours(15, 0, 0, 0);
+                }
+
+                setDateValue(target);
+
+                if (statusInput && !statusInput.value) {
+                    statusInput.value = 'follow-up';
+                }
+            };
+
+            const updatePanels = function () {
+                const outcome = outcomeSelect ? String(outcomeSelect.value || '') : '';
+
+                panels.forEach((panel) => {
+                    const showFor = String(panel.getAttribute('data-show-for') || '')
+                        .split(',')
+                        .map((value) => value.trim())
+                        .filter(Boolean);
+
+                    const visible = !isFinishFlow || showFor.length === 0 || showFor.includes(outcome);
+                    panel.classList.toggle('hidden', !visible);
+                });
+
+                if (callbackPresetsWrap) {
+                    const showPresets = isFinishFlow && (outcome === 'callback' || outcome === 'no-answer');
+                    callbackPresetsWrap.classList.toggle('hidden', !showPresets);
+                }
+
+                if (isFinishFlow && statusInput && !statusInput.value) {
+                    if (outcome === 'not-interested') statusInput.value = 'lost';
+                    if (outcome === 'meeting-booked') statusInput.value = 'qualified';
+                }
+            };
+
+            if (outcomeSelect) {
+                outcomeSelect.addEventListener('change', updatePanels);
+                updatePanels();
+            }
+
+            presetButtons.forEach((button) => {
+                button.addEventListener('click', function () {
+                    applyPreset(String(button.getAttribute('data-preset') || ''));
+                });
+            });
+        });
+    </script>
 @endsection
