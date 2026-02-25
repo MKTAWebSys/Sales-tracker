@@ -209,6 +209,10 @@
                             Zitra odpoledne (15:00)
                         </button>
                     </div>
+                    <div class="mt-3">
+                        <label for="next_follow_up_at_quick" class="block text-xs font-medium text-amber-800">Nebo vyber cas rucne</label>
+                        <input id="next_follow_up_at_quick" type="datetime-local" class="js-followup-quick-input mt-1 w-full rounded-md border-amber-200 bg-white text-sm text-slate-900">
+                    </div>
                     <div class="mt-2 text-xs text-slate-500">
                         Zkratky: <kbd class="rounded bg-slate-200 px-1.5 py-0.5">Alt+1</kbd>,
                         <kbd class="rounded bg-slate-200 px-1.5 py-0.5">Alt+2</kbd>,
@@ -352,6 +356,8 @@
             const panels = Array.from(form.querySelectorAll('.js-call-panel'));
             const callbackPresetsWrap = form.querySelector('.js-callback-presets');
             const followUpInput = form.querySelector('#next_follow_up_at');
+            const followUpQuickInput = form.querySelector('.js-followup-quick-input');
+            const followUpPanel = form.querySelector('.js-panel-followup');
             const meetingInput = form.querySelector('#meeting_planned_at');
             const summaryInput = form.querySelector('#summary');
             const presetButtons = Array.from(form.querySelectorAll('.js-followup-preset'));
@@ -392,6 +398,18 @@
                 input.value = local.toISOString().slice(0, 16);
             };
 
+            const syncFollowUpQuickInput = function () {
+                if (!followUpQuickInput || !followUpInput) return;
+                followUpQuickInput.value = followUpInput.value || '';
+            };
+
+            const openFollowUpPanel = function () {
+                if (!followUpPanel) return;
+                if (followUpPanel.tagName && followUpPanel.tagName.toLowerCase() === 'details') {
+                    followUpPanel.open = true;
+                }
+            };
+
             const hasValue = function (input) {
                 return !!(input && String(input.value || '').trim() !== '');
             };
@@ -425,6 +443,8 @@
                 }
 
                 setDateValue(followUpInput, target);
+                syncFollowUpQuickInput();
+                openFollowUpPanel();
 
             };
 
@@ -445,11 +465,13 @@
                         target.setHours(9, 0, 0, 0);
                     }
                     setDateValue(followUpInput, target);
+                    syncFollowUpQuickInput();
                 }
 
                 if (outcome === 'interested') {
                     if (!hasValue(followUpInput)) {
                         setDateValue(followUpInput, nextBusinessTime(2, 10));
+                        syncFollowUpQuickInput();
                     }
                 }
 
@@ -476,6 +498,9 @@
                 if (callbackPresetsWrap) {
                     const showPresets = isFinishFlow && finalizeCall && (outcome === 'callback' || outcome === 'no-answer');
                     callbackPresetsWrap.classList.toggle('hidden', !showPresets);
+                    if (showPresets) {
+                        syncFollowUpQuickInput();
+                    }
                 }
 
                 applySmartDefaults(outcome);
@@ -514,6 +539,15 @@
                     applyPreset(String(button.getAttribute('data-preset') || ''));
                 });
             });
+
+            if (followUpQuickInput && followUpInput) {
+                followUpInput.addEventListener('change', syncFollowUpQuickInput);
+                followUpInput.addEventListener('input', syncFollowUpQuickInput);
+                followUpQuickInput.addEventListener('change', function () {
+                    followUpInput.value = followUpQuickInput.value || '';
+                    openFollowUpPanel();
+                });
+            }
 
             if (isFinishFlow && summaryInput && draftKey) {
                 try {
