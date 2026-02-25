@@ -24,33 +24,34 @@
 @extends('layouts.crm', ['title' => 'Prehled | Call CRM'])
 
 @section('content')
-    <div class="mb-8">
-        <h1 class="text-2xl font-semibold">Prehled</h1>
-        <p class="mt-1 text-sm text-slate-600">Prehled MVP metrik a priorit follow-upu.</p>
-    </div>
-
-    @if (auth()->user()?->isManager())
-        <div class="mb-6 rounded-xl p-4 shadow-sm ring-1 {{ $isViewingOtherUser ? 'bg-amber-50 ring-amber-200' : 'bg-white ring-slate-200' }}">
-            <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-end gap-3">
-                <div class="min-w-64">
-                    <label for="user_view_id" class="block text-sm font-medium {{ $isViewingOtherUser ? 'text-amber-900' : 'text-slate-700' }}">
-                        Pohled uzivatele
-                    </label>
-                    <select id="user_view_id" name="user_view_id" class="mt-1 w-full rounded-md border-slate-300 {{ $isViewingOtherUser ? 'bg-amber-100/60 border-amber-300' : '' }}">
-                        @foreach ($dashboardUsers as $userOption)
-                            <option value="{{ $userOption->id }}" @selected($viewedUserId === $userOption->id)>{{ $userOption->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Prepnout pohled</button>
-                @if ($isViewingOtherUser)
-                    <a href="{{ route('dashboard') }}" class="rounded-md bg-amber-100 px-4 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-300">Zpet na muj pohled</a>
-                    <span class="text-sm text-amber-900">Koukate na dashboard uzivatele: <span class="font-semibold">{{ $viewedUser?->name }}</span></span>
-                @endif
-            </form>
+    <div class="mb-8 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold">Prehled</h1>
+            <p class="mt-1 text-sm text-slate-600">Prehled MVP metrik a priorit follow-upu.</p>
         </div>
 
-    @endif
+        @if (auth()->user()?->isManager())
+            <div class="w-full rounded-xl p-4 shadow-sm ring-1 xl:ml-6 xl:w-auto xl:min-w-[28rem] {{ $isViewingOtherUser ? 'bg-amber-50 ring-amber-200' : 'bg-white ring-slate-200' }}">
+                <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-end gap-3">
+                    <div class="min-w-64 flex-1">
+                        <label for="user_view_id" class="block text-sm font-medium {{ $isViewingOtherUser ? 'text-amber-900' : 'text-slate-700' }}">
+                            Pohled uzivatele
+                        </label>
+                        <select id="user_view_id" name="user_view_id" class="mt-1 w-full rounded-md border-slate-300 {{ $isViewingOtherUser ? 'bg-amber-100/60 border-amber-300' : '' }}">
+                            @foreach ($dashboardUsers as $userOption)
+                                <option value="{{ $userOption->id }}" @selected($viewedUserId === $userOption->id)>{{ $userOption->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Prepnout pohled</button>
+                    @if ($isViewingOtherUser)
+                        <a href="{{ route('dashboard') }}" class="rounded-md bg-amber-100 px-4 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-300">Zpet na muj pohled</a>
+                        <div class="w-full text-sm text-amber-900">Koukate na dashboard uzivatele: <span class="font-semibold">{{ $viewedUser?->name }}</span></div>
+                    @endif
+                </form>
+            </div>
+        @endif
+    </div>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-7">
         <a href="{{ route('companies.index') }}" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50">
