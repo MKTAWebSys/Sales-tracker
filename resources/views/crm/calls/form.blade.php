@@ -208,10 +208,10 @@
                         <button type="button" class="js-followup-preset rounded-md bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200" data-preset="tomorrow_afternoon">
                             Zitra odpoledne (15:00)
                         </button>
-                    </div>
-                    <div class="mt-3">
-                        <label for="next_follow_up_at_quick" class="block text-xs font-medium text-amber-800">Nebo vyber cas rucne</label>
-                        <input id="next_follow_up_at_quick" type="datetime-local" class="js-followup-quick-input mt-1 w-full rounded-md border-amber-200 bg-white text-sm text-slate-900">
+                        <div class="flex items-center gap-2 rounded-md bg-white/70 px-2 py-1 ring-1 ring-amber-200">
+                            <input id="next_follow_up_date_quick" type="date" class="js-followup-quick-date rounded-md border-amber-200 bg-white px-2 py-1 text-xs text-slate-900">
+                            <input id="next_follow_up_time_quick" type="time" class="js-followup-quick-time rounded-md border-amber-200 bg-white px-2 py-1 text-xs text-slate-900" step="60">
+                        </div>
                     </div>
                     <div class="mt-2 text-xs text-slate-500">
                         Zkratky: <kbd class="rounded bg-slate-200 px-1.5 py-0.5">Alt+1</kbd>,
@@ -356,7 +356,8 @@
             const panels = Array.from(form.querySelectorAll('.js-call-panel'));
             const callbackPresetsWrap = form.querySelector('.js-callback-presets');
             const followUpInput = form.querySelector('#next_follow_up_at');
-            const followUpQuickInput = form.querySelector('.js-followup-quick-input');
+            const followUpQuickDate = form.querySelector('.js-followup-quick-date');
+            const followUpQuickTime = form.querySelector('.js-followup-quick-time');
             const followUpPanel = form.querySelector('.js-panel-followup');
             const meetingInput = form.querySelector('#meeting_planned_at');
             const summaryInput = form.querySelector('#summary');
@@ -399,8 +400,17 @@
             };
 
             const syncFollowUpQuickInput = function () {
-                if (!followUpQuickInput || !followUpInput) return;
-                followUpQuickInput.value = followUpInput.value || '';
+                if (!followUpInput || !followUpQuickDate || !followUpQuickTime) return;
+                const value = String(followUpInput.value || '').trim();
+                if (!value) {
+                    followUpQuickDate.value = '';
+                    followUpQuickTime.value = '';
+                    return;
+                }
+
+                const parts = value.split('T');
+                followUpQuickDate.value = parts[0] || '';
+                followUpQuickTime.value = (parts[1] || '').slice(0, 5);
             };
 
             const openFollowUpPanel = function () {
@@ -540,13 +550,20 @@
                 });
             });
 
-            if (followUpQuickInput && followUpInput) {
+            const syncMainFollowUpFromQuick = function () {
+                if (!followUpInput || !followUpQuickDate || !followUpQuickTime) return;
+                const date = String(followUpQuickDate.value || '').trim();
+                const time = String(followUpQuickTime.value || '').trim();
+                if (!date) return;
+                followUpInput.value = time ? (date + 'T' + time) : (date + 'T09:00');
+                openFollowUpPanel();
+            };
+
+            if (followUpQuickDate && followUpQuickTime && followUpInput) {
                 followUpInput.addEventListener('change', syncFollowUpQuickInput);
                 followUpInput.addEventListener('input', syncFollowUpQuickInput);
-                followUpQuickInput.addEventListener('change', function () {
-                    followUpInput.value = followUpQuickInput.value || '';
-                    openFollowUpPanel();
-                });
+                followUpQuickDate.addEventListener('change', syncMainFollowUpFromQuick);
+                followUpQuickTime.addEventListener('change', syncMainFollowUpFromQuick);
             }
 
             if (isFinishFlow && summaryInput && draftKey) {
