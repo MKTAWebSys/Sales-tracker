@@ -22,6 +22,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'call_target_count',
+        'call_target_until',
     ];
 
     /**
@@ -44,6 +47,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'call_target_until' => 'date',
         ];
     }
 
@@ -60,5 +64,10 @@ class User extends Authenticatable
     public function callsReceivedFromTransfer(): HasMany
     {
         return $this->hasMany(Call::class, 'handed_over_to_id');
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === 'manager';
     }
 }

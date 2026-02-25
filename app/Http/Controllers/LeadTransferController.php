@@ -12,10 +12,12 @@ use Illuminate\View\View;
 
 class LeadTransferController extends Controller
 {
+    private const QUICK_STATUSES = ['pending', 'accepted', 'done', 'cancelled'];
+
     public function index(Request $request): View
     {
         $query = LeadTransfer::query()
-            ->with(['company', 'fromUser', 'toUser', 'call'])
+            ->with(['company', 'call', 'fromUser', 'toUser'])
             ->latest('transferred_at');
 
         if ($request->filled('status')) {
@@ -26,12 +28,28 @@ class LeadTransferController extends Controller
             $query->where('company_id', $request->integer('company_id'));
         }
 
+        if ($request->filled('call_id')) {
+            $query->where('call_id', $request->integer('call_id'));
+        }
+
+        if ($request->filled('from_user_id')) {
+            $query->where('from_user_id', $request->integer('from_user_id'));
+        }
+
+        if ($request->filled('to_user_id')) {
+            $query->where('to_user_id', $request->integer('to_user_id'));
+        }
+
         return view('crm.lead-transfers.index', [
             'leadTransfers' => $query->paginate(20)->withQueryString(),
             'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
+            'users' => User::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'status' => (string) $request->input('status', ''),
                 'company_id' => (string) $request->input('company_id', ''),
+                'call_id' => (string) $request->input('call_id', ''),
+                'from_user_id' => (string) $request->input('from_user_id', ''),
+                'to_user_id' => (string) $request->input('to_user_id', ''),
             ],
         ]);
     }
@@ -44,6 +62,7 @@ class LeadTransferController extends Controller
                 'transferred_at' => now(),
                 'company_id' => $request->integer('company_id') ?: null,
                 'call_id' => $request->integer('call_id') ?: null,
+                'from_user_id' => $request->user()?->id,
             ]),
             'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
             'calls' => Call::query()->with('company')->latest('called_at')->limit(100)->get(),
@@ -53,19 +72,16 @@ class LeadTransferController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $this->validateLeadTransfer($request);
-        $data['from_user_id'] = $data['from_user_id'] ?: $request->user()?->id;
-
-        $leadTransfer = LeadTransfer::create($data);
+        $leadTransfer = LeadTransfer::create($this->validateLeadTransfer($request));
 
         return redirect()
             ->route('lead-transfers.show', $leadTransfer)
-            ->with('status', 'Lead transfer created.');
+            ->with('status', 'Předání leadu bylo vytvořeno.');
     }
 
     public function show(LeadTransfer $leadTransfer): View
     {
-        $leadTransfer->load(['company', 'call', 'fromUser', 'toUser']);
+        $leadTransfer->load(['company', 'call.company', 'fromUser', 'toUser']);
 
         return view('crm.lead-transfers.show', compact('leadTransfer'));
     }
@@ -86,7 +102,22 @@ class LeadTransferController extends Controller
 
         return redirect()
             ->route('lead-transfers.show', $leadTransfer)
-            ->with('status', 'Lead transfer updated.');
+            ->with('status', 'Předání leadu bylo upraveno.');
+    }
+
+    public function quickStatus(Request $request, LeadTransfer $leadTransfer): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', 'in:'.implode(',', self::QUICK_STATUSES)],
+        ]);
+
+        $leadTransfer->update([
+            'status' => $data['status'],
+        ]);
+
+        return redirect()
+            ->to(url()->previous() ?: route('lead-transfers.index'))
+            ->with('status', 'Stav predani leadu byl rychle upraven.');
     }
 
     private function validateLeadTransfer(Request $request): array

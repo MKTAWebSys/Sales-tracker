@@ -11,6 +11,8 @@ use Illuminate\View\View;
 
 class MeetingController extends Controller
 {
+    private const QUICK_STATUSES = ['planned', 'confirmed', 'done', 'cancelled'];
+
     public function index(Request $request): View
     {
         $query = Meeting::query()
@@ -21,12 +23,12 @@ class MeetingController extends Controller
             $query->where('status', $request->string('status'));
         }
 
-        if ($request->filled('mode')) {
-            $query->where('mode', $request->string('mode'));
-        }
-
         if ($request->filled('company_id')) {
             $query->where('company_id', $request->integer('company_id'));
+        }
+
+        if ($request->filled('call_id')) {
+            $query->where('call_id', $request->integer('call_id'));
         }
 
         return view('crm.meetings.index', [
@@ -34,8 +36,8 @@ class MeetingController extends Controller
             'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'status' => (string) $request->input('status', ''),
-                'mode' => (string) $request->input('mode', ''),
                 'company_id' => (string) $request->input('company_id', ''),
+                'call_id' => (string) $request->input('call_id', ''),
             ],
         ]);
     }
@@ -45,8 +47,8 @@ class MeetingController extends Controller
         return view('crm.meetings.form', [
             'meeting' => new Meeting([
                 'status' => 'planned',
-                'mode' => 'online',
-                'scheduled_at' => now()->addDays(2),
+                'mode' => 'onsite',
+                'scheduled_at' => now()->addDay(),
                 'company_id' => $request->integer('company_id') ?: null,
                 'call_id' => $request->integer('call_id') ?: null,
             ]),
@@ -61,12 +63,12 @@ class MeetingController extends Controller
 
         return redirect()
             ->route('meetings.show', $meeting)
-            ->with('status', 'Meeting created.');
+            ->with('status', 'Schůzka byla vytvořena.');
     }
 
     public function show(Meeting $meeting): View
     {
-        $meeting->load(['company', 'call']);
+        $meeting->load(['company', 'call.company']);
 
         return view('crm.meetings.show', compact('meeting'));
     }
@@ -86,7 +88,22 @@ class MeetingController extends Controller
 
         return redirect()
             ->route('meetings.show', $meeting)
-            ->with('status', 'Meeting updated.');
+            ->with('status', 'Schůzka byla upravena.');
+    }
+
+    public function quickStatus(Request $request, Meeting $meeting): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', 'in:'.implode(',', self::QUICK_STATUSES)],
+        ]);
+
+        $meeting->update([
+            'status' => $data['status'],
+        ]);
+
+        return redirect()
+            ->to(url()->previous() ?: route('meetings.index'))
+            ->with('status', 'Stav schuzky byl rychle upraven.');
     }
 
     private function validateMeeting(Request $request): array
