@@ -10,7 +10,6 @@ use App\Models\Meeting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\View\View;
 
 class CallController extends Controller
@@ -69,6 +68,7 @@ class CallController extends Controller
         $activeCall = Call::query()
             ->where('caller_id', $user->id)
             ->where('outcome', 'pending')
+            ->whereNull('ended_at')
             ->latest('called_at')
             ->first();
 
@@ -122,13 +122,12 @@ class CallController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validateCall($request);
-        $companyStatus = Arr::pull($data, 'company_status');
         $data['caller_id'] = $request->user()?->id;
 
         $call = Call::create($data);
         $createdItems = $this->syncNextActions($call);
         $this->syncFirstContactedAt($call);
-        $this->syncCompanyStatus($call, $companyStatus);
+        $this->syncCompanyStatus($call);
 
         return redirect()
             ->route('calls.show', $call)
@@ -156,7 +155,7 @@ class CallController extends Controller
 
     public function finish(Call $call): View
     {
-        $finalizeCall = request()->boolean('finalize_call') || $call->outcome !== 'pending';
+        $finalizeCall = request()->boolean('finalize_call') || $call->ended_at !== null || $call->outcome !== 'pending';
 
         return view('crm.calls.form', [
             'call' => $call,
@@ -168,13 +167,35 @@ class CallController extends Controller
         ]);
     }
 
+    public function end(Request $request, Call $call): RedirectResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        if (! $user->isManager() && $call->caller_id && $call->caller_id !== $user->id) {
+            abort(403);
+        }
+
+        if ($call->outcome === 'pending' && $call->ended_at === null) {
+            $call->update(['ended_at' => now()]);
+        }
+
+        return redirect()->route('calls.finish', [
+            'call' => $call,
+            'finalize_call' => 1,
+            'caller_mode' => $request->boolean('caller_mode') ? 1 : null,
+        ]);
+    }
+
     public function update(Request $request, Call $call): RedirectResponse
     {
         $isFinishFlow = (string) $request->input('flow_mode') === 'finish';
         $isCallerMode = $request->boolean('caller_mode');
-        $finalizeCall = $request->boolean('finalize_call') || $call->outcome !== 'pending';
+        $finalizeCall = $request->boolean('finalize_call') || $call->ended_at !== null || $call->outcome !== 'pending';
 
-        if ($isFinishFlow && $call->outcome === 'pending' && ! $finalizeCall) {
+        if ($isFinishFlow && $call->outcome === 'pending' && $call->ended_at === null && ! $finalizeCall) {
             $data = $request->validate([
                 'company_id' => ['required', 'exists:companies,id'],
                 'called_at' => ['required', 'date'],
@@ -196,7 +217,9 @@ class CallController extends Controller
         }
 
         $data = $this->validateCall($request);
-        $companyStatus = Arr::pull($data, 'company_status');
+        if ($isFinishFlow && $finalizeCall && empty($data['ended_at'])) {
+            $data['ended_at'] = $call->ended_at ?: now();
+        }
 
         if ($isFinishFlow && $finalizeCall && ($data['outcome'] ?? null) === 'pending') {
             return redirect()
@@ -208,7 +231,7 @@ class CallController extends Controller
         $call->update($data);
         $createdItems = $this->syncNextActions($call);
         $this->syncFirstContactedAt($call);
-        $this->syncCompanyStatus($call, $companyStatus);
+        $this->syncCompanyStatus($call);
 
         $closedStalePending = 0;
         if ($isFinishFlow && $finalizeCall && $call->caller_id) {
@@ -279,7 +302,7 @@ class CallController extends Controller
             abort(403);
         }
 
-        if ($call->outcome !== 'pending') {
+        if ($call->outcome !== 'pending' || $call->ended_at !== null) {
             $message = 'Quick note lze pridat jen k aktivnimu hovoru.';
             if ($request->expectsJson()) {
                 return response()->json(['message' => $message], 422);
@@ -318,12 +341,12 @@ class CallController extends Controller
         return $request->validate([
             'company_id' => ['required', 'exists:companies,id'],
             'called_at' => ['required', 'date'],
+            'ended_at' => ['nullable', 'date', 'after_or_equal:called_at'],
             'outcome' => ['required', 'string', 'max:50'],
             'summary' => ['nullable', 'string'],
             'next_follow_up_at' => ['nullable', 'date'],
             'meeting_planned_at' => ['nullable', 'date'],
             'handed_over_to_id' => ['nullable', 'exists:users,id'],
-            'company_status' => ['nullable', 'in:'.implode(',', self::COMPANY_STATUSES)],
         ]);
     }
 
@@ -398,9 +421,15 @@ class CallController extends Controller
         return $baseMessage.' Automaticky vytvoreno: '.implode(', ', $createdItems).'.';
     }
 
-    private function syncCompanyStatus(Call $call, ?string $explicitStatus): void
+    private function syncCompanyStatus(Call $call): void
     {
-        $targetStatus = $explicitStatus ?: ($call->next_follow_up_at ? 'follow-up' : null);
+        $targetStatus = match ($call->outcome) {
+            'not-interested' => 'lost',
+            'meeting-booked' => 'qualified',
+            'callback', 'no-answer' => 'follow-up',
+            'interested' => $call->next_follow_up_at ? 'follow-up' : 'contacted',
+            default => ($call->next_follow_up_at ? 'follow-up' : null),
+        };
 
         if (! $targetStatus || ! in_array($targetStatus, self::COMPANY_STATUSES, true)) {
             return;
@@ -430,6 +459,7 @@ class CallController extends Controller
         $staleCalls = Call::query()
             ->where('caller_id', $callerId)
             ->where('outcome', 'pending')
+            ->whereNull('ended_at')
             ->when($keepCallId, fn ($query) => $query->where('id', '!=', $keepCallId))
             ->orderByDesc('called_at')
             ->get(['id', 'summary']);
@@ -449,6 +479,7 @@ class CallController extends Controller
             Call::query()
                 ->whereKey($staleCall->id)
                 ->update([
+                    'ended_at' => now(),
                     'outcome' => 'callback',
                     'summary' => $summary === '' ? $notePrefix : rtrim($summary).PHP_EOL.PHP_EOL.$notePrefix,
                     'updated_at' => now(),

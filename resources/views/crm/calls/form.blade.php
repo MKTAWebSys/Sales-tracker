@@ -1,8 +1,9 @@
 @php
     $flowMode = $flowMode ?? ($call->exists ? 'edit' : 'create');
     $isFinishFlow = $flowMode === 'finish';
-    $finalizeCall = ($finalizeCall ?? false) || ! $isFinishFlow || $call->outcome !== 'pending';
-    $isActiveNoteOnlyFinish = $isFinishFlow && ! $finalizeCall && $call->outcome === 'pending';
+    $isActiveCall = $call->outcome === 'pending' && ! $call->ended_at;
+    $finalizeCall = ($finalizeCall ?? false) || ! $isFinishFlow || $call->ended_at || $call->outcome !== 'pending';
+    $isActiveNoteOnlyFinish = $isFinishFlow && ! $finalizeCall && $isActiveCall;
     $isCallerMode = request()->boolean('caller_mode');
     $isCreateFlow = $flowMode === 'create';
     $titleText = $isFinishFlow ? 'Ukoncit hovor' : ($call->exists ? 'Upravit hovor' : 'Novy hovor');
@@ -43,6 +44,9 @@
         @endif
         @if ($isCallerMode)
             <input type="hidden" name="caller_mode" value="1">
+        @endif
+        @if ($isFinishFlow && $finalizeCall)
+            <input type="hidden" name="ended_at" value="{{ old('ended_at', optional($call->ended_at)->format('Y-m-d\\TH:i:s')) }}">
         @endif
 
         @if ($isActiveNoteOnlyFinish)
@@ -123,6 +127,34 @@
         @endif
 
         @if ($isFinishFlow && $finalizeCall)
+            @php
+                $startAt = old('called_at') ? \Illuminate\Support\Carbon::parse(old('called_at')) : $call->called_at;
+                $endAt = old('ended_at') ? \Illuminate\Support\Carbon::parse(old('ended_at')) : $call->ended_at;
+                $durationMinutes = ($startAt && $endAt && $endAt->greaterThanOrEqualTo($startAt))
+                    ? $startAt->diffInMinutes($endAt)
+                    : null;
+            @endphp
+            <div class="rounded-xl border border-slate-200 bg-white p-4">
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Cas hovoru</h2>
+                <div class="mt-2 grid gap-3 sm:grid-cols-3 text-sm">
+                    <div class="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
+                        <div class="text-xs text-slate-500">Od</div>
+                        <div class="mt-1 font-semibold text-slate-900">{{ $startAt?->format('Y-m-d H:i:s') ?? '-' }}</div>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
+                        <div class="text-xs text-slate-500">Do</div>
+                        <div class="mt-1 font-semibold text-slate-900">{{ $endAt?->format('Y-m-d H:i:s') ?? '-' }}</div>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
+                        <div class="text-xs text-slate-500">Pocet minut</div>
+                        <div class="mt-1 font-semibold text-slate-900">{{ $durationMinutes !== null ? $durationMinutes : '-' }}</div>
+                    </div>
+                </div>
+                @error('ended_at')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
             <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -187,16 +219,10 @@
                 @enderror
             </div>
             <div class="js-call-panel js-panel-status" data-show-for="callback,no-answer,interested,not-interested,meeting-booked">
-                <label for="company_status" class="block text-sm font-medium text-slate-700">Zmenit stav firmy</label>
-                <select id="company_status" name="company_status" class="mt-1 w-full rounded-md border-slate-300">
-                    <option value="">Beze zmeny (nebo auto follow-up)</option>
-                    @foreach (($companyStatuses ?? []) as $status)
-                        <option value="{{ $status }}" @selected(old('company_status') === $status)>{{ $status }}</option>
-                    @endforeach
-                </select>
-                @error('company_status')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
+                <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div class="text-sm font-medium text-slate-700">Stav firmy se zmeni automaticky podle vysledku hovoru.</div>
+                    <p class="mt-1 text-xs text-slate-500">Napr. callback -> follow-up, schuzka -> qualified, bez zajmu -> lost.</p>
+                </div>
             </div>
         </div>
 
@@ -212,9 +238,15 @@
 
         <div class="flex flex-wrap items-center gap-3">
             @if ($isActiveNoteOnlyFinish)
-                <a href="{{ route('calls.finish', ['call' => $call, 'finalize_call' => 1, 'caller_mode' => $isCallerMode ? 1 : null]) }}" class="inline-flex w-full items-center justify-center rounded-md bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700 sm:w-auto sm:min-w-[15rem]">
-                    Ukoncit hovor
-                </a>
+                <form method="POST" action="{{ route('calls.end', $call) }}" class="w-full sm:w-auto">
+                    @csrf
+                    @if ($isCallerMode)
+                        <input type="hidden" name="caller_mode" value="1">
+                    @endif
+                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-md bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700 sm:min-w-[15rem]">
+                        Ukoncit hovor
+                    </button>
+                </form>
             @else
                 <button type="submit" class="rounded-md {{ $isFinishFlow ? 'bg-emerald-600' : 'bg-slate-900' }} px-4 py-2 text-sm font-medium text-white">{{ $submitText }}</button>
             @endif

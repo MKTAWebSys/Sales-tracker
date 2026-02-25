@@ -57,6 +57,7 @@
                 ->with('company:id,name')
                 ->where('caller_id', auth()->id())
                 ->where('outcome', 'pending')
+                ->whereNull('ended_at')
                 ->latest('called_at')
                 ->first();
         }
@@ -138,10 +139,15 @@
                        class="rounded-md bg-violet-700 px-3 py-2 text-xs font-medium text-white">
                         Zapsat poznamku / vratit se k hovoru
                     </a>
-                    <a href="{{ route('calls.finish', ['call' => $activeCallBanner, 'finalize_call' => 1, 'caller_mode' => request()->routeIs('caller-mode.*') ? 1 : null]) }}"
-                       class="rounded-md bg-white px-3 py-2 text-xs font-medium text-violet-800 ring-1 ring-violet-200">
-                        Ukoncit hovor
-                    </a>
+                    <form method="POST" action="{{ route('calls.end', $activeCallBanner) }}" data-row-link-ignore>
+                        @csrf
+                        @if (request()->routeIs('caller-mode.*'))
+                            <input type="hidden" name="caller_mode" value="1">
+                        @endif
+                        <button type="submit" class="rounded-md bg-white px-3 py-2 text-xs font-medium text-violet-800 ring-1 ring-violet-200">
+                            Ukoncit hovor
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

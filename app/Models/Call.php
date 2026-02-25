@@ -18,6 +18,7 @@ class Call extends Model
         'caller_id',
         'handed_over_to_id',
         'called_at',
+        'ended_at',
         'outcome',
         'summary',
         'next_follow_up_at',
@@ -28,6 +29,7 @@ class Call extends Model
     {
         return [
             'called_at' => 'datetime',
+            'ended_at' => 'datetime',
             'next_follow_up_at' => 'datetime',
             'meeting_planned_at' => 'datetime',
         ];

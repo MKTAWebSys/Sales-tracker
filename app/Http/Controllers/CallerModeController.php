@@ -18,6 +18,7 @@ class CallerModeController extends Controller
             ->with('company.assignedUser', 'company.firstCaller')
             ->where('caller_id', $user->id)
             ->where('outcome', 'pending')
+            ->whereNull('ended_at')
             ->latest('called_at')
             ->first();
 

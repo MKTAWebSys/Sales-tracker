@@ -59,9 +59,13 @@
 
                 <div class="mt-5 grid gap-3 sm:grid-cols-2">
                     @if ($activeCall)
-                        <a href="{{ route('calls.finish', ['call' => $activeCall, 'caller_mode' => 1, 'finalize_call' => 1]) }}" class="flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-4 text-base font-semibold text-white shadow-sm">
-                            Ukoncit aktivni hovor
-                        </a>
+                        <form method="POST" action="{{ route('calls.end', $activeCall) }}" class="contents">
+                            @csrf
+                            <input type="hidden" name="caller_mode" value="1">
+                            <button type="submit" class="flex w-full items-center justify-center rounded-xl bg-rose-600 px-4 py-4 text-base font-semibold text-white shadow-sm hover:bg-rose-700">
+                                Ukoncit aktivni hovor
+                            </button>
+                        </form>
                     @else
                         <a href="{{ route('companies.calls.start', ['company' => $company, 'caller_mode' => 1]) }}" class="flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-4 text-base font-semibold text-white shadow-sm">
                             Zahajit hovor

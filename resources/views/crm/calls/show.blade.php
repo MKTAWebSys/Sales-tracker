@@ -9,17 +9,26 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
-            @if ($call->outcome === 'pending')
-                <a href="{{ route('calls.finish', $call) }}" class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white">Ukoncit hovor</a>
+            @if ($call->outcome === 'pending' && ! $call->ended_at)
+                <form method="POST" action="{{ route('calls.end', $call) }}">
+                    @csrf
+                    <button type="submit" class="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white">Ukoncit hovor</button>
+                </form>
+            @elseif ($call->outcome === 'pending' && $call->ended_at)
+                <a href="{{ route('calls.finish', ['call' => $call, 'finalize_call' => 1]) }}" class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white">Dokoncit vyhodnoceni hovoru</a>
             @endif
             <a href="{{ route('calls.edit', $call) }}" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Upravit</a>
             <a href="{{ route('calls.index') }}" class="rounded-md bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Zpet</a>
         </div>
     </div>
 
-    @if ($call->outcome === 'pending')
+    @if ($call->outcome === 'pending' && ! $call->ended_at)
         <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             Tento hovor je zatim rozpracovany. Klikni na <span class="font-medium">Ukoncit hovor</span> a dopln vysledek + navazujici kroky.
+        </div>
+    @elseif ($call->outcome === 'pending' && $call->ended_at)
+        <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            Hovor uz byl ukoncen (cas zastaven), ale chybi finalni vysledek. Dokonci vyhodnoceni hovoru.
         </div>
     @endif
 
@@ -35,6 +44,10 @@
                 <div>
                     <dt class="text-slate-500">Vysledek</dt>
                     <dd>@include('crm.partials.call-outcome-badge', ['outcome' => $call->outcome])</dd>
+                </div>
+                <div>
+                    <dt class="text-slate-500">Konec hovoru</dt>
+                    <dd>{{ $call->ended_at?->format('Y-m-d H:i:s') ?? '-' }}</dd>
                 </div>
                 <div>
                     <dt class="text-slate-500">Volal</dt>
