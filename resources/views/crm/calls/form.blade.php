@@ -87,6 +87,17 @@
         </div>
 
         @if ($isFinishFlow)
+            <div>
+                <label for="summary" class="block text-sm font-medium text-slate-700">Poznamka / shrnuti hovoru</label>
+                <textarea id="summary" name="summary" rows="6" class="mt-1 w-full rounded-md border-slate-300" autofocus>{{ old('summary', $call->summary) }}</textarea>
+                <p class="mt-1 text-xs text-slate-500">Poznamku muzes psat prubezne behem hovoru. Dalsi kroky se jen prizpusobi podle vysledku.</p>
+                @error('summary')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+        @endif
+
+        @if ($isFinishFlow)
             <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -159,13 +170,15 @@
             </div>
         </div>
 
-        <div>
-            <label for="summary" class="block text-sm font-medium text-slate-700">Poznamka / shrnuti hovoru</label>
-            <textarea id="summary" name="summary" rows="6" class="mt-1 w-full rounded-md border-slate-300" @if($isFinishFlow) autofocus @endif>{{ old('summary', $call->summary) }}</textarea>
-            @error('summary')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
+        @unless ($isFinishFlow)
+            <div>
+                <label for="summary" class="block text-sm font-medium text-slate-700">Poznamka / shrnuti hovoru</label>
+                <textarea id="summary" name="summary" rows="6" class="mt-1 w-full rounded-md border-slate-300">{{ old('summary', $call->summary) }}</textarea>
+                @error('summary')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+        @endunless
 
         <div class="flex flex-wrap items-center gap-3">
             <button type="submit" class="rounded-md {{ $isFinishFlow ? 'bg-emerald-600' : 'bg-slate-900' }} px-4 py-2 text-sm font-medium text-white">{{ $submitText }}</button>
