@@ -5,6 +5,7 @@
     $finalizeCall = ($finalizeCall ?? false) || ! $isFinishFlow || $call->ended_at || $call->outcome !== 'pending';
     $isActiveNoteOnlyFinish = $isFinishFlow && ! $finalizeCall && $isActiveCall;
     $isCallerMode = request()->boolean('caller_mode');
+    $isCallerFinalizeMinimal = $isFinishFlow && $finalizeCall && $isCallerMode;
     $isCreateFlow = $flowMode === 'create';
     $titleText = $isFinishFlow
         ? ($isActiveNoteOnlyFinish ? 'Probiha hovor' : 'Hovor ukoncen')
@@ -49,6 +50,36 @@
         @endif
         @if ($isFinishFlow && $finalizeCall)
             <input type="hidden" name="ended_at" value="{{ old('ended_at', optional($call->ended_at)->format('Y-m-d\\TH:i:s')) }}">
+            <input type="hidden" name="company_id" value="{{ old('company_id', $call->company_id) }}">
+            <input type="hidden" name="called_at" value="{{ old('called_at', optional($call->called_at)->format('Y-m-d\\TH:i:s')) }}">
+        @endif
+
+        @if ($isFinishFlow && $finalizeCall)
+            @php
+                $startAt = old('called_at') ? \Illuminate\Support\Carbon::parse(old('called_at')) : $call->called_at;
+                $endAt = old('ended_at') ? \Illuminate\Support\Carbon::parse(old('ended_at')) : $call->ended_at;
+                $durationMinutes = ($startAt && $endAt && $endAt->greaterThanOrEqualTo($startAt))
+                    ? $startAt->diffInMinutes($endAt)
+                    : null;
+            @endphp
+            <div class="rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 p-4 text-white shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">Hovor ukoncen</div>
+                        <div class="mt-1 text-lg font-semibold text-white/95">{{ $company?->name ?? 'Bez firmy' }}</div>
+                    </div>
+                    <div class="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold tabular-nums text-white ring-1 ring-white/10">
+                        {{ $durationMinutes !== null ? $durationMinutes.' min' : '-' }}
+                    </div>
+                </div>
+                <div class="mt-3 grid gap-2 text-xs text-slate-300 sm:grid-cols-2">
+                    <div class="rounded-lg bg-white/5 px-3 py-2 ring-1 ring-white/10">Od: {{ $startAt?->format('Y-m-d H:i:s') ?? '-' }}</div>
+                    <div class="rounded-lg bg-white/5 px-3 py-2 ring-1 ring-white/10">Do: {{ $endAt?->format('Y-m-d H:i:s') ?? '-' }}</div>
+                </div>
+                @error('ended_at')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
         @endif
 
         @if ($isActiveNoteOnlyFinish)
@@ -68,7 +99,7 @@
                     </div>
                 </div>
             </div>
-        @else
+        @elseif (! ($isFinishFlow && $finalizeCall))
             <div>
                 <label for="company_id" class="block text-sm font-medium text-slate-700">Firma</label>
                 <select id="company_id" name="company_id" required class="mt-1 w-full rounded-md border-slate-300" @disabled($isFinishFlow)>
@@ -163,32 +194,6 @@
         @endif
 
         @if ($isFinishFlow && $finalizeCall)
-            @php
-                $startAt = old('called_at') ? \Illuminate\Support\Carbon::parse(old('called_at')) : $call->called_at;
-                $endAt = old('ended_at') ? \Illuminate\Support\Carbon::parse(old('ended_at')) : $call->ended_at;
-                $durationMinutes = ($startAt && $endAt && $endAt->greaterThanOrEqualTo($startAt))
-                    ? $startAt->diffInMinutes($endAt)
-                    : null;
-            @endphp
-            <div class="rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 p-4 text-white shadow-sm">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">Hovor ukoncen</div>
-                        <div class="mt-1 text-lg font-semibold text-white/95">{{ $company?->name ?? 'Bez firmy' }}</div>
-                    </div>
-                    <div class="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold tabular-nums text-white ring-1 ring-white/10">
-                        {{ $durationMinutes !== null ? $durationMinutes.' min' : '-' }}
-                    </div>
-                </div>
-                <div class="mt-3 grid gap-2 text-xs text-slate-300 sm:grid-cols-2">
-                    <div class="rounded-lg bg-white/5 px-3 py-2 ring-1 ring-white/10">Od: {{ $startAt?->format('Y-m-d H:i:s') ?? '-' }}</div>
-                    <div class="rounded-lg bg-white/5 px-3 py-2 ring-1 ring-white/10">Do: {{ $endAt?->format('Y-m-d H:i:s') ?? '-' }}</div>
-                </div>
-                @error('ended_at')
-                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-
             <div class="js-callback-presets hidden rounded-xl border border-amber-200 bg-amber-50/70 p-3">
                     <div class="mb-2 text-xs font-medium uppercase tracking-wide text-amber-700">Rychly termin pro znovu zavolat</div>
                     <div class="flex flex-wrap items-center gap-2">
@@ -210,41 +215,98 @@
             </div>
         @endif
 
-        <div class="grid gap-6 sm:grid-cols-2 {{ $isActiveNoteOnlyFinish ? 'hidden' : '' }}">
-            <div class="js-call-panel js-panel-followup" data-show-for="callback,no-answer,interested">
-                <label for="next_follow_up_at" class="block text-sm font-medium text-slate-700">Dalsi follow-up</label>
-                <input id="next_follow_up_at" name="next_follow_up_at" type="datetime-local" value="{{ old('next_follow_up_at', optional($call->next_follow_up_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
-                <p class="mt-1 text-xs text-slate-500">Volitelne. Pro callback/no-answer se casto hodi rychly termin vyse.</p>
-                @error('next_follow_up_at')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-            <div class="js-call-panel js-panel-meeting" data-show-for="meeting-booked,interested">
-                <label for="meeting_planned_at" class="block text-sm font-medium text-slate-700">Planovana schuzka</label>
-                <input id="meeting_planned_at" name="meeting_planned_at" type="datetime-local" value="{{ old('meeting_planned_at', optional($call->meeting_planned_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
-                @error('meeting_planned_at')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-        </div>
+        @if (! $isActiveNoteOnlyFinish)
+            @if ($isFinishFlow && $finalizeCall)
+                <div class="space-y-3">
+                    <details class="js-call-panel js-panel-followup rounded-xl border border-slate-200 bg-white p-3" data-show-for="callback,no-answer,interested" @open(in_array(old('outcome', $finishOutcomeDefault), ['callback','no-answer','interested'], true))>
+                        <summary class="cursor-pointer list-none text-sm font-semibold text-slate-800">
+                            Follow-up
+                            <span class="ml-2 text-xs font-normal text-slate-500">naplanovat dalsi kontakt</span>
+                        </summary>
+                        <div class="mt-3">
+                            <label for="next_follow_up_at" class="block text-sm font-medium text-slate-700">Dalsi follow-up</label>
+                            <input id="next_follow_up_at" name="next_follow_up_at" type="datetime-local" value="{{ old('next_follow_up_at', optional($call->next_follow_up_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
+                            @error('next_follow_up_at')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </details>
 
-        <div class="grid gap-6 sm:grid-cols-2 {{ $isActiveNoteOnlyFinish ? 'hidden' : '' }}">
-            <div class="js-call-panel js-panel-handover" data-show-for="interested,meeting-booked">
-                <label for="handed_over_to_id" class="block text-sm font-medium text-slate-700">Predat komu</label>
-                <select id="handed_over_to_id" name="handed_over_to_id" class="mt-1 w-full rounded-md border-slate-300">
-                    <option value="">Bez predani</option>
-                    @foreach ($users as $user)
-                        <option value="{{ $user->id }}" @selected((string) old('handed_over_to_id', $call->handed_over_to_id) === (string) $user->id)>
-                            {{ $user->name }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('handed_over_to_id')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-            <div class="js-call-panel js-panel-status hidden" data-show-for=""></div>
-        </div>
+                    <details class="js-call-panel js-panel-meeting rounded-xl border border-slate-200 bg-white p-3" data-show-for="meeting-booked,interested" @open(in_array(old('outcome', $finishOutcomeDefault), ['meeting-booked','interested'], true))>
+                        <summary class="cursor-pointer list-none text-sm font-semibold text-slate-800">
+                            Schuzka
+                            <span class="ml-2 text-xs font-normal text-slate-500">volitelne naplanovani</span>
+                        </summary>
+                        <div class="mt-3">
+                            <label for="meeting_planned_at" class="block text-sm font-medium text-slate-700">Planovana schuzka</label>
+                            <input id="meeting_planned_at" name="meeting_planned_at" type="datetime-local" value="{{ old('meeting_planned_at', optional($call->meeting_planned_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
+                            @error('meeting_planned_at')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </details>
+
+                    @if (! $isCallerFinalizeMinimal)
+                        <details class="js-call-panel js-panel-handover rounded-xl border border-slate-200 bg-white p-3" data-show-for="interested,meeting-booked">
+                            <summary class="cursor-pointer list-none text-sm font-semibold text-slate-800">
+                                Predani leadu
+                                <span class="ml-2 text-xs font-normal text-slate-500">volitelne</span>
+                            </summary>
+                            <div class="mt-3">
+                                <label for="handed_over_to_id" class="block text-sm font-medium text-slate-700">Predat komu</label>
+                                <select id="handed_over_to_id" name="handed_over_to_id" class="mt-1 w-full rounded-md border-slate-300">
+                                    <option value="">Bez predani</option>
+                                    @foreach ($users as $user)
+                                        <option value="{{ $user->id }}" @selected((string) old('handed_over_to_id', $call->handed_over_to_id) === (string) $user->id)>
+                                            {{ $user->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('handed_over_to_id')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </details>
+                    @endif
+                </div>
+            @else
+                <div class="grid gap-6 sm:grid-cols-2">
+                    <div class="js-call-panel js-panel-followup" data-show-for="callback,no-answer,interested">
+                        <label for="next_follow_up_at" class="block text-sm font-medium text-slate-700">Dalsi follow-up</label>
+                        <input id="next_follow_up_at" name="next_follow_up_at" type="datetime-local" value="{{ old('next_follow_up_at', optional($call->next_follow_up_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
+                        <p class="mt-1 text-xs text-slate-500">Volitelne. Pro callback/no-answer se casto hodi rychly termin vyse.</p>
+                        @error('next_follow_up_at')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="js-call-panel js-panel-meeting" data-show-for="meeting-booked,interested">
+                        <label for="meeting_planned_at" class="block text-sm font-medium text-slate-700">Planovana schuzka</label>
+                        <input id="meeting_planned_at" name="meeting_planned_at" type="datetime-local" value="{{ old('meeting_planned_at', optional($call->meeting_planned_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
+                        @error('meeting_planned_at')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="grid gap-6 sm:grid-cols-2">
+                    <div class="js-call-panel js-panel-handover" data-show-for="interested,meeting-booked">
+                        <label for="handed_over_to_id" class="block text-sm font-medium text-slate-700">Predat komu</label>
+                        <select id="handed_over_to_id" name="handed_over_to_id" class="mt-1 w-full rounded-md border-slate-300">
+                            <option value="">Bez predani</option>
+                            @foreach ($users as $user)
+                                <option value="{{ $user->id }}" @selected((string) old('handed_over_to_id', $call->handed_over_to_id) === (string) $user->id)>
+                                    {{ $user->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('handed_over_to_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="js-call-panel js-panel-status hidden" data-show-for=""></div>
+                </div>
+            @endif
+        @endif
 
         @unless ($isFinishFlow)
             <div>
