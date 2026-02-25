@@ -111,24 +111,21 @@
                                     | bezi
                                     <span class="js-active-call-timer font-semibold" data-called-at="{{ $activeCallBanner->called_at?->toIso8601String() ?? '' }}">00:00</span>
                                 </div>
-                                <form method="POST" action="{{ route('calls.update', $activeCallBanner) }}" class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-start">
+                                <form method="POST" action="{{ route('calls.quick-note', $activeCallBanner) }}" class="js-active-call-quick-note-form mt-3 flex flex-col gap-2 sm:flex-row sm:items-start" data-row-link-ignore>
                                     @csrf
-                                    @method('PUT')
-                                    <input type="hidden" name="flow_mode" value="finish">
-                                    <input type="hidden" name="company_id" value="{{ $activeCallBanner->company_id }}">
-                                    <input type="hidden" name="called_at" value="{{ $activeCallBanner->called_at?->format('Y-m-d H:i:s') }}">
-                                    @if (request()->routeIs('caller-mode.*'))
-                                        <input type="hidden" name="caller_mode" value="1">
-                                    @endif
                                     <textarea
-                                        name="summary"
+                                        name="note"
                                         rows="2"
+                                        data-row-link-ignore
                                         class="w-full rounded-md border-violet-200 bg-white/90 text-sm text-slate-900 placeholder:text-slate-400 focus:border-violet-400 focus:ring-violet-400 sm:min-w-[22rem]"
                                         placeholder="Rychla poznamka behem hovoru..."
-                                    >{{ old('summary', $activeCallBanner->summary) }}</textarea>
-                                    <button type="submit" class="rounded-md bg-violet-700 px-3 py-2 text-xs font-medium text-white sm:mt-0">
-                                        Ulozit poznamku
-                                    </button>
+                                    ></textarea>
+                                    <div class="flex items-center gap-2">
+                                        <button type="submit" class="js-active-call-quick-note-submit rounded-md bg-violet-700 px-3 py-2 text-xs font-medium text-white sm:mt-0">
+                                            Ulozit poznamku
+                                        </button>
+                                        <span class="js-active-call-quick-note-status text-xs text-violet-700" aria-live="polite"></span>
+                                    </div>
                                 </form>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
@@ -253,6 +250,75 @@
                     };
                     tick();
                     window.setInterval(tick, 1000);
+                }
+
+                const quickNoteForm = document.querySelector('.js-active-call-quick-note-form');
+                if (quickNoteForm) {
+                    const quickNoteTextarea = quickNoteForm.querySelector('textarea[name="note"]');
+                    const quickNoteSubmit = quickNoteForm.querySelector('.js-active-call-quick-note-submit');
+                    const quickNoteStatus = quickNoteForm.querySelector('.js-active-call-quick-note-status');
+                    let quickNoteStatusTimer = null;
+
+                    quickNoteForm.addEventListener('submit', async function (event) {
+                        event.preventDefault();
+
+                        const note = quickNoteTextarea ? String(quickNoteTextarea.value || '').trim() : '';
+                        if (!note) {
+                            if (quickNoteStatus) quickNoteStatus.textContent = 'Zadej poznamku';
+                            return;
+                        }
+
+                        if (quickNoteSubmit) {
+                            quickNoteSubmit.disabled = true;
+                            quickNoteSubmit.textContent = 'Ukladam...';
+                        }
+                        if (quickNoteStatus) {
+                            quickNoteStatus.textContent = 'Ukladam...';
+                        }
+
+                        const formData = new FormData(quickNoteForm);
+                        const token = quickNoteForm.querySelector('input[name="_token"]')?.value || '';
+
+                        try {
+                            const response = await fetch(quickNoteForm.action, {
+                                method: 'POST',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': token,
+                                },
+                                body: formData,
+                                credentials: 'same-origin',
+                            });
+
+                            const payload = await response.json().catch(() => ({}));
+                            if (!response.ok) {
+                                throw new Error(payload.message || 'Ulozeni poznamky selhalo');
+                            }
+
+                            if (quickNoteTextarea) {
+                                quickNoteTextarea.value = '';
+                                quickNoteTextarea.focus();
+                            }
+
+                            if (quickNoteStatus) {
+                                quickNoteStatus.textContent = 'Poznamka ulozena';
+                                window.clearTimeout(quickNoteStatusTimer);
+                                quickNoteStatusTimer = window.setTimeout(function () {
+                                    quickNoteStatus.textContent = '';
+                                }, 1800);
+                            }
+                        } catch (error) {
+                            if (quickNoteStatus) {
+                                quickNoteStatus.textContent = error instanceof Error ? error.message : 'Chyba ulozeni';
+                            }
+                        } finally {
+                            if (quickNoteSubmit) {
+                                quickNoteSubmit.disabled = false;
+                                quickNoteSubmit.textContent = 'Ulozit poznamku';
+                            }
+                        }
+                    });
                 }
 
                 document.querySelectorAll('a[href*="/start-call"]').forEach(function (link) {

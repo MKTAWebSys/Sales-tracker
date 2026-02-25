@@ -247,6 +247,55 @@ class CallController extends Controller
             ->with('status', 'Vysledek hovoru byl rychle upraven.');
     }
 
+    public function quickNote(Request $request, Call $call)
+    {
+        $user = $request->user();
+        if (! $user) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+
+            return redirect()->route('login');
+        }
+
+        if (! $user->isManager() && $call->caller_id && $call->caller_id !== $user->id) {
+            abort(403);
+        }
+
+        if ($call->outcome !== 'pending') {
+            $message = 'Quick note lze pridat jen k aktivnimu hovoru.';
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            return redirect()->back()->with('status', $message);
+        }
+
+        $data = $request->validate([
+            'note' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $note = trim((string) $data['note']);
+        $timestampedBlock = now()->format('Y-m-d H:i:s').' | '.($user->name ?: 'user').PHP_EOL.$note;
+
+        $call->update([
+            'summary' => trim((string) $call->summary) === ''
+                ? $timestampedBlock
+                : rtrim((string) $call->summary).PHP_EOL.PHP_EOL.$timestampedBlock,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Poznamka ulozena',
+                'summary' => $call->summary,
+                'saved_at' => now()->toIso8601String(),
+            ]);
+        }
+
+        return redirect()->back()->with('status', 'Poznamka byla ulozena.');
+    }
+
     private function validateCall(Request $request): array
     {
         return $request->validate([

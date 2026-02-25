@@ -26,6 +26,18 @@
                     <a href="{{ route('companies.show', $company) }}" class="text-sm text-slate-600 underline">Detail</a>
                 </div>
 
+                @if ($activeCall)
+                    <div class="mb-4 rounded-xl border border-violet-200 bg-violet-50/70 p-4">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-violet-700">Aktivni hovor</div>
+                        <div class="mt-2 text-3xl font-semibold text-violet-900">
+                            <span class="js-caller-mode-call-timer" data-called-at="{{ $activeCall->called_at?->toIso8601String() ?? '' }}">00:00</span>
+                        </div>
+                        <div class="mt-1 text-xs text-violet-700">
+                            Start {{ $activeCall->called_at?->format('Y-m-d H:i:s') ?? '-' }}
+                        </div>
+                    </div>
+                @endif
+
                 <dl class="grid gap-3 text-sm sm:grid-cols-2">
                     <div>
                         <dt class="text-slate-500">Kontaktni osoba</dt>
@@ -107,4 +119,35 @@
             </ul>
         </div>
     </div>
+
+    @if ($activeCall)
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const timerEl = document.querySelector('.js-caller-mode-call-timer');
+                if (!timerEl) return;
+
+                const calledAtIso = String(timerEl.getAttribute('data-called-at') || '');
+                if (!calledAtIso) return;
+
+                const startedAt = new Date(calledAtIso);
+                const formatDuration = function (totalSeconds) {
+                    const seconds = Math.max(0, totalSeconds | 0);
+                    const hrs = Math.floor(seconds / 3600);
+                    const mins = Math.floor((seconds % 3600) / 60);
+                    const secs = seconds % 60;
+                    const pad = (n) => String(n).padStart(2, '0');
+                    return hrs > 0 ? (pad(hrs) + ':' + pad(mins) + ':' + pad(secs)) : (pad(mins) + ':' + pad(secs));
+                };
+
+                const tick = function () {
+                    const now = new Date();
+                    const diffSeconds = Math.floor((now.getTime() - startedAt.getTime()) / 1000);
+                    timerEl.textContent = formatDuration(diffSeconds);
+                };
+
+                tick();
+                window.setInterval(tick, 1000);
+            });
+        </script>
+    @endif
 @endsection

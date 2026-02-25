@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function () {
         'update',
     ]);
     Route::post('/calls/{call}/quick-outcome', [CallController::class, 'quickOutcome'])->name('calls.quick-outcome');
+    Route::post('/calls/{call}/quick-note', [CallController::class, 'quickNote'])->name('calls.quick-note');
     Route::match(['get', 'post'], '/companies/{company}/start-call', [CallController::class, 'quickStart'])->name('companies.calls.start');
     Route::get('/calls/{call}/finish', [CallController::class, 'finish'])->name('calls.finish');
     Route::resource('follow-ups', FollowUpController::class)->only([
