@@ -119,6 +119,11 @@
                             Zitra odpoledne (15:00)
                         </button>
                     </div>
+                    <div class="mt-2 text-xs text-slate-500">
+                        Zkratky: <kbd class="rounded bg-slate-200 px-1.5 py-0.5">Alt+1</kbd>,
+                        <kbd class="rounded bg-slate-200 px-1.5 py-0.5">Alt+2</kbd>,
+                        <kbd class="rounded bg-slate-200 px-1.5 py-0.5">Alt+3</kbd>
+                    </div>
                 </div>
             </div>
         @endif
@@ -204,14 +209,31 @@
             const panels = Array.from(form.querySelectorAll('.js-call-panel'));
             const callbackPresetsWrap = form.querySelector('.js-callback-presets');
             const followUpInput = form.querySelector('#next_follow_up_at');
+            const meetingInput = form.querySelector('#meeting_planned_at');
             const statusInput = form.querySelector('#company_status');
+            const summaryInput = form.querySelector('#summary');
             const presetButtons = Array.from(form.querySelectorAll('.js-followup-preset'));
             const isFinishFlow = {{ $isFinishFlow ? 'true' : 'false' }};
+            const callId = {{ $call->exists ? (int) $call->id : 'null' }};
+            const draftKey = callId ? ('call-finish-summary-draft:' + String(callId)) : null;
+            let autosaveTimer = null;
+            let statusAutoTouched = false;
 
-            const setDateValue = function (date) {
-                const pad = (num) => String(num).padStart(2, '0');
+            const setDateValue = function (input, date) {
+                if (!input) return;
                 const local = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-                followUpInput.value = local.toISOString().slice(0, 16);
+                input.value = local.toISOString().slice(0, 16);
+            };
+
+            const hasValue = function (input) {
+                return !!(input && String(input.value || '').trim() !== '');
+            };
+
+            const nextBusinessTime = function (daysAhead, hour) {
+                const target = new Date();
+                target.setDate(target.getDate() + daysAhead);
+                target.setHours(hour, 0, 0, 0);
+                return target;
             };
 
             const applyPreset = function (preset) {
@@ -235,10 +257,56 @@
                     target.setHours(15, 0, 0, 0);
                 }
 
-                setDateValue(target);
+                setDateValue(followUpInput, target);
 
                 if (statusInput && !statusInput.value) {
                     statusInput.value = 'follow-up';
+                    statusAutoTouched = true;
+                }
+            };
+
+            const applySmartDefaults = function (outcome) {
+                if (!isFinishFlow) return;
+
+                if ((outcome === 'callback' || outcome === 'no-answer') && !hasValue(followUpInput)) {
+                    const now = new Date();
+                    const target = new Date();
+                    if (outcome === 'no-answer') {
+                        target.setHours(15, 0, 0, 0);
+                        if (target <= now) {
+                            target.setDate(target.getDate() + 1);
+                            target.setHours(9, 0, 0, 0);
+                        }
+                    } else {
+                        target.setDate(target.getDate() + 1);
+                        target.setHours(9, 0, 0, 0);
+                    }
+                    setDateValue(followUpInput, target);
+                }
+
+                if (outcome === 'interested') {
+                    if (!hasValue(followUpInput)) {
+                        setDateValue(followUpInput, nextBusinessTime(2, 10));
+                    }
+                    if (statusInput && !statusInput.value) {
+                        statusInput.value = 'follow-up';
+                        statusAutoTouched = true;
+                    }
+                }
+
+                if (outcome === 'meeting-booked') {
+                    if (!hasValue(meetingInput)) {
+                        setDateValue(meetingInput, nextBusinessTime(1, 10));
+                    }
+                    if (statusInput && !statusInput.value) {
+                        statusInput.value = 'qualified';
+                        statusAutoTouched = true;
+                    }
+                }
+
+                if (outcome === 'not-interested' && statusInput && !statusInput.value) {
+                    statusInput.value = 'lost';
+                    statusAutoTouched = true;
                 }
             };
 
@@ -260,10 +328,7 @@
                     callbackPresetsWrap.classList.toggle('hidden', !showPresets);
                 }
 
-                if (isFinishFlow && statusInput && !statusInput.value) {
-                    if (outcome === 'not-interested') statusInput.value = 'lost';
-                    if (outcome === 'meeting-booked') statusInput.value = 'qualified';
-                }
+                applySmartDefaults(outcome);
             };
 
             if (outcomeSelect) {
@@ -271,10 +336,70 @@
                 updatePanels();
             }
 
+            if (statusInput) {
+                statusInput.addEventListener('change', function () {
+                    statusAutoTouched = false;
+                });
+            }
+
             presetButtons.forEach((button) => {
                 button.addEventListener('click', function () {
                     applyPreset(String(button.getAttribute('data-preset') || ''));
                 });
+            });
+
+            if (isFinishFlow && summaryInput && draftKey) {
+                try {
+                    const existingDraft = window.localStorage.getItem(draftKey);
+                    if (existingDraft && !String(summaryInput.value || '').trim()) {
+                        summaryInput.value = existingDraft;
+                    }
+                } catch (error) {
+                }
+
+                summaryInput.addEventListener('input', function () {
+                    window.clearTimeout(autosaveTimer);
+                    autosaveTimer = window.setTimeout(function () {
+                        try {
+                            window.localStorage.setItem(draftKey, String(summaryInput.value || ''));
+                        } catch (error) {
+                        }
+                    }, 300);
+                });
+
+                form.addEventListener('submit', function () {
+                    try {
+                        window.localStorage.removeItem(draftKey);
+                    } catch (error) {
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', function (event) {
+                if (!isFinishFlow || !callbackPresetsWrap || callbackPresetsWrap.classList.contains('hidden')) return;
+                if (!event.altKey || event.ctrlKey || event.metaKey) return;
+
+                const target = event.target;
+                const inEditable = target && (
+                    target.matches('input, textarea, select') ||
+                    target.closest('input, textarea, select')
+                );
+                if (inEditable && target !== summaryInput) {
+                    return;
+                }
+
+                if (event.key === '1') {
+                    event.preventDefault();
+                    applyPreset('today_afternoon');
+                }
+                if (event.key === '2') {
+                    event.preventDefault();
+                    applyPreset('tomorrow_morning');
+                }
+                if (event.key === '3') {
+                    event.preventDefault();
+                    applyPreset('tomorrow_afternoon');
+                }
             });
         });
     </script>

@@ -5,7 +5,7 @@
     $isManagerView = auth()->user()?->isManager();
     $targetCount = $viewedUser?->call_target_count;
     $targetUntil = $viewedUser?->call_target_until;
-    $targetRemaining = $targetCount ? max($targetCount - (int) ($myStats['companies'] ?? 0), 0) : null;
+    $targetRemaining = $targetCount ? max($targetCount - (int) ($myStats['queueCompanies'] ?? 0), 0) : null;
     $userFilterParams = $viewedUserId ? ['assigned_user_id' => $viewedUserId, 'mine' => 0] : [];
     $myCompaniesParams = ($isManagerView && $viewedUserId && auth()->id() !== $viewedUserId)
         ? ['assigned_user_id' => $viewedUserId, 'mine' => 0]
@@ -132,7 +132,7 @@
                         @endif
                     </div>
                     <div class="mt-1 text-xs text-slate-700">
-                        Aktualne ve fronte: {{ $myStats['companies'] ?? 0 }}
+                        Aktualne ve fronte: {{ $myStats['queueCompanies'] ?? 0 }}
                         @if (!is_null($targetRemaining))
                             | Zbyva k naplneni cile: {{ $targetRemaining }}
                         @endif
@@ -142,11 +142,11 @@
             <div class="mt-4 grid gap-3 sm:grid-cols-3">
                 <a href="{{ $isViewingOtherUser ? route('companies.index', array_merge($myQueueParams, ['mine' => 0])) : route('companies.queue.mine') }}" class="rounded-lg border border-emerald-200 bg-emerald-50/30 p-3 transition hover:bg-emerald-50/50">
                     <div class="text-xs text-emerald-700">{{ $isViewingOtherUser ? 'Fronta uzivatele (new)' : 'Moje fronta k obvolani' }}</div>
-                    <div class="mt-1 text-xl font-semibold text-emerald-800">{{ $myStats['companies'] ?? 0 }}</div>
+                    <div class="mt-1 text-xl font-semibold text-emerald-800">{{ $myStats['queueCompanies'] ?? 0 }}</div>
                 </a>
                 <a href="{{ route('companies.index', $myCompaniesParams) }}" class="rounded-lg border border-slate-200 p-3 transition hover:bg-slate-50">
                     <div class="text-xs text-slate-500">{{ $isViewingOtherUser ? 'Firmy uzivatele' : 'Moje firmy' }}</div>
-                    <div class="mt-1 text-xl font-semibold">{{ $myStats['companies'] ?? 0 }}</div>
+                    <div class="mt-1 text-xl font-semibold">{{ $myStats['ownerCompanies'] ?? 0 }}</div>
                     @if ($targetCount || $targetUntil)
                         <div class="mt-1 text-[11px] text-slate-500">
                             {{ $targetCount ? 'cil '.$targetCount : 'cil ?' }}@if($targetUntil) · do {{ $targetUntil->format('Y-m-d') }}@endif
