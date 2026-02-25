@@ -45,9 +45,25 @@
                     <span class="text-sm text-amber-900">Koukate na dashboard uzivatele: <span class="font-semibold">{{ $viewedUser?->name }}</span></span>
                 @endif
             </form>
+        </div>
 
-            @if ($viewedUser)
-                <form method="POST" action="{{ route('dashboard.user-target.update', $viewedUser) }}" class="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-white/70 p-3 md:grid-cols-4">
+        @if ($viewedUser)
+            <div class="mb-6 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                <div class="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-sm font-semibold text-slate-900">Admin nastaveni cile obvolani</h2>
+                        <p class="text-xs text-slate-500">
+                            Nastaveni pro: <span class="font-medium">{{ $viewedUser->name }}</span>
+                        </p>
+                    </div>
+                    @if ($isViewingOtherUser)
+                        <span class="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900 ring-1 ring-amber-200">
+                            Cizi pohled
+                        </span>
+                    @endif
+                </div>
+
+                <form method="POST" action="{{ route('dashboard.user-target.update', $viewedUser) }}" class="grid gap-3 md:grid-cols-4">
                     @csrf
                     <div>
                         <label for="call_target_count" class="block text-xs font-medium text-slate-700">Cil firem k obvolani</label>
@@ -61,12 +77,12 @@
                         <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Ulozit cil</button>
                         <button type="submit" name="clear_target" value="1" class="rounded-md bg-slate-200 px-3 py-2 text-sm font-medium text-slate-700">Smazat</button>
                     </div>
-                    <div class="flex items-center text-xs {{ $isViewingOtherUser ? 'text-amber-900' : 'text-slate-600' }}">
-                        Admin nastaveni cile pro zvoleneho uzivatele.
+                    <div class="flex items-center text-xs text-slate-500">
+                        Nastaveni se propse do dashboardu a seznamu firem.
                     </div>
                 </form>
-            @endif
-        </div>
+            </div>
+        @endif
     @endif
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-7">

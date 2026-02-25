@@ -20,7 +20,6 @@
                         ['Firmy', 'companies.index'],
                         ['Hovory', 'calls.index'],
                         ['Follow-upy', 'follow-ups.index'],
-                        ['Import XLSX', 'imports.xlsx'],
                         ['Predani leadu', 'lead-transfers.index'],
                         ['Schuzky', 'meetings.index'],
                     ];

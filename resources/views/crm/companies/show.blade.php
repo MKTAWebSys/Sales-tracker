@@ -12,6 +12,7 @@
         <div class="flex items-center gap-2">
             <a href="{{ route('companies.calls.start', $company) }}" class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white">Zahajit hovor</a>
             <a href="{{ route('companies.quick-defer', $company) }}" class="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white">Odlozit + dalsi firma</a>
+            <a href="{{ route('imports.xlsx') }}" class="rounded-md bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-200">Import XLSX</a>
             <a href="{{ route('calls.create', ['company_id' => $company->id]) }}" class="rounded-md bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
                 Novy hovor (rucne)
             </a>
