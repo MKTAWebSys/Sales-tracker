@@ -22,6 +22,7 @@ class CalendarController extends Controller
             ? (string) $request->input('view', 'week')
             : 'week';
         $mine = $isManager ? (string) $request->input('mine', '1') : '1';
+        $overdueOnly = $request->boolean('overdue_only');
 
         [$rangeStart, $rangeEnd] = $this->resolveRange($date, $viewMode);
 
@@ -53,6 +54,17 @@ class CalendarController extends Controller
         $this->applyAgendaFilters($rangeFollowUpsQuery, $rangeMeetingsQuery, $request, $user, $isManager, $mine);
         $this->applyAgendaFilters($rangeDoneFollowUpsQuery, $rangeDoneMeetingsQuery, $request, $user, $isManager, $mine);
 
+        if ($overdueOnly) {
+            $now = now();
+            $selectedFollowUpsQuery->where('due_at', '<', $now);
+            $selectedMeetingsQuery->where('scheduled_at', '<', $now);
+            $rangeFollowUpsQuery->where('due_at', '<', $now);
+            $rangeMeetingsQuery->where('scheduled_at', '<', $now);
+            // "Jen overdue" focuses on open/planned backlog, not completed history.
+            $rangeDoneFollowUpsQuery->whereRaw('1 = 0');
+            $rangeDoneMeetingsQuery->whereRaw('1 = 0');
+        }
+
         $followUps = $selectedFollowUpsQuery->orderBy('due_at')->get();
         $meetings = $selectedMeetingsQuery->orderBy('scheduled_at')->get();
         $rangeFollowUps = $rangeFollowUpsQuery->orderBy('due_at')->get();
@@ -73,6 +85,7 @@ class CalendarController extends Controller
                 'mine' => $mine,
                 'assigned_user_id' => (string) $request->input('assigned_user_id', ''),
                 'view' => $viewMode,
+                'overdue_only' => $overdueOnly,
             ],
             'users' => $isManager ? User::query()->orderBy('name')->get(['id', 'name']) : collect(),
             'counts' => [

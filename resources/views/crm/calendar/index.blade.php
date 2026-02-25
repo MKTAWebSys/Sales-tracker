@@ -75,6 +75,14 @@
             @endif
         </div>
 
+        <div>
+            <label class="block text-sm font-medium text-slate-700">Filtr</label>
+            <label class="mt-2 inline-flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" name="overdue_only" value="1" class="rounded border-slate-300" @checked(!empty($filters['overdue_only']))>
+                <span>Jen overdue</span>
+            </label>
+        </div>
+
         <div class="md:col-span-2 flex items-end gap-3">
             <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Zobrazit</button>
             <a href="{{ route('calendar.index') }}" class="text-sm text-slate-600 hover:text-slate-900">Reset</a>
@@ -113,12 +121,18 @@
                 @php
                     $isOverdueDay = $cell['date']->lt($today) && ($cell['counts']['todoTotal'] ?? 0) > 0;
                     $hasTodo = ($cell['counts']['todoTotal'] ?? 0) > 0;
+                    $isOverloadedDay = ($cell['counts']['todoTotal'] ?? 0) >= 8;
                 @endphp
-                <div class="rounded-xl border p-4 {{ $isOverdueDay ? 'border-rose-200 bg-rose-50/30' : ($hasTodo ? 'border-blue-200 bg-blue-50/30' : 'border-slate-200 bg-slate-50/40') }}">
+                <div class="rounded-xl border p-4 {{ $isOverloadedDay ? 'border-fuchsia-300 bg-fuchsia-50/25 ring-1 ring-fuchsia-100' : ($isOverdueDay ? 'border-rose-200 bg-rose-50/30' : ($hasTodo ? 'border-blue-200 bg-blue-50/30' : 'border-slate-200 bg-slate-50/40')) }}">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <div class="text-sm font-semibold">{{ $cell['date']->format('l') }} {{ $cell['date']->format('Y-m-d') }}</div>
-                            <div class="text-xs text-slate-500">Denni souhrn aktivit</div>
+                            <div class="text-xs text-slate-500">
+                                Denni souhrn aktivit
+                                @if ($isOverloadedDay)
+                                    | pretizeni (8+)
+                                @endif
+                            </div>
                         </div>
                         <a href="{{ route('calendar.index', array_merge(request()->except('date'), ['date' => $cell['key'], 'view' => 'day'])) }}" class="text-xs text-slate-600 underline">Obnovit den</a>
                     </div>
@@ -145,15 +159,18 @@
                     @php
                         $isOverdueDay = $cell['date']->lt($today) && ($cell['counts']['todoTotal'] ?? 0) > 0;
                         $hasDone = ($cell['counts']['doneTotal'] ?? 0) > 0;
+                        $isOverloadedDay = ($cell['counts']['todoTotal'] ?? 0) >= 8;
                         $baseClass = $cell['isSelected']
                             ? 'border-slate-900 bg-slate-900 text-white'
-                            : ($isOverdueDay
+                            : ($isOverloadedDay
+                                ? 'border-fuchsia-300 bg-fuchsia-50/35 hover:bg-fuchsia-50/55'
+                                : ($isOverdueDay
                                 ? 'border-rose-200 bg-rose-50/35 hover:bg-rose-50/55'
                                 : (($cell['counts']['todoTotal'] ?? 0) > 0
                                     ? 'border-blue-200 bg-blue-50/30 hover:bg-blue-50/50'
                                     : ($hasDone
                                         ? 'border-emerald-200 bg-emerald-50/20 hover:bg-emerald-50/35'
-                                        : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50')));
+                                        : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50'))));
                     @endphp
                     <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['date' => $cell['key'], 'view' => 'week'])) }}"
                        class="block rounded-xl border p-3 transition {{ $baseClass }}">
@@ -167,6 +184,9 @@
                         <div class="mt-1 text-[11px] {{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-600' }}">
                             Hotovo: {{ $cell['counts']['doneTotal'] ?? 0 }}
                         </div>
+                        @if ($isOverloadedDay)
+                            <div class="mt-1 text-[10px] {{ $cell['isSelected'] ? 'text-fuchsia-200' : 'text-fuchsia-700' }}">Pretizeni 8+</div>
+                        @endif
                     </a>
                 @endforeach
                 </div>
@@ -178,9 +198,10 @@
                         @foreach ($calendarGrid['days'] as $index => $cell)
                             @php
                                 $isOverdueDay = $cell['date']->lt($today) && ($cell['counts']['todoTotal'] ?? 0) > 0;
+                                $isOverloadedDay = ($cell['counts']['todoTotal'] ?? 0) >= 8;
                             @endphp
                             <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['date' => $cell['key'], 'view' => 'week'])) }}"
-                               class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm transition {{ $cell['isSelected'] ? 'border-slate-900 bg-slate-900 text-white' : ($isOverdueDay ? 'border-rose-200 bg-rose-50/30 hover:bg-rose-50/50' : 'border-slate-200 hover:bg-slate-50') }}">
+                               class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm transition {{ $cell['isSelected'] ? 'border-slate-900 bg-slate-900 text-white' : ($isOverloadedDay ? 'border-fuchsia-300 bg-fuchsia-50/25 hover:bg-fuchsia-50/40' : ($isOverdueDay ? 'border-rose-200 bg-rose-50/30 hover:bg-rose-50/50' : 'border-slate-200 hover:bg-slate-50')) }}">
                                 <div class="min-w-0">
                                     <div class="font-medium">{{ $dayHeaders[$index] }} {{ $cell['date']->format('j.n.') }}</div>
                                     <div class="text-xs {{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-500' }}">
@@ -190,6 +211,9 @@
                                 <div class="text-right text-xs">
                                     <div class="{{ $cell['isSelected'] ? 'text-emerald-200' : 'text-emerald-700' }}">Hotovo {{ $cell['counts']['doneTotal'] ?? 0 }}</div>
                                     <div class="{{ $cell['isSelected'] ? 'text-amber-200' : 'text-amber-700' }}">Neudelano {{ $cell['counts']['todoTotal'] ?? 0 }}</div>
+                                    @if ($isOverloadedDay)
+                                        <div class="{{ $cell['isSelected'] ? 'text-fuchsia-200' : 'text-fuchsia-700' }}">Pretizeni</div>
+                                    @endif
                                 </div>
                             </a>
                         @endforeach
@@ -209,15 +233,18 @@
                             @php
                                 $isOverdueDay = $cell['date']->lt($today) && ($cell['counts']['todoTotal'] ?? 0) > 0;
                                 $hasDone = ($cell['counts']['doneTotal'] ?? 0) > 0;
+                                $isOverloadedDay = ($cell['counts']['todoTotal'] ?? 0) >= 8;
                                 $monthCellClass = $cell['isSelected']
                                     ? 'border-slate-900 bg-slate-900 text-white'
-                                    : ($isOverdueDay
+                                    : ($isOverloadedDay
+                                        ? 'border-fuchsia-300 bg-fuchsia-50/25 hover:bg-fuchsia-50/40'
+                                        : ($isOverdueDay
                                         ? 'border-rose-200 bg-rose-50/25 hover:bg-rose-50/40'
                                         : ((($cell['counts']['todoTotal'] ?? 0) > 0)
                                             ? 'border-blue-200 bg-blue-50/25 hover:bg-blue-50/40'
                                             : ($hasDone
                                                 ? 'border-emerald-200 bg-emerald-50/15 hover:bg-emerald-50/30'
-                                                : 'border-slate-200 bg-white hover:bg-slate-50')));
+                                                : 'border-slate-200 bg-white hover:bg-slate-50'))));
                             @endphp
                             <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['date' => $cell['key'], 'view' => 'month'])) }}"
                                class="block min-h-24 rounded-xl border p-2 transition {{ $monthCellClass }} {{ ! $cell['isCurrentMonth'] ? 'opacity-60' : '' }}">
@@ -232,6 +259,9 @@
                                     <div class="{{ $cell['isSelected'] ? 'text-amber-200' : 'text-amber-700' }}">FU {{ $cell['counts']['todoFollowUps'] ?? 0 }}</div>
                                     <div class="{{ $cell['isSelected'] ? 'text-emerald-200' : 'text-emerald-700' }}">SCH {{ $cell['counts']['todoMeetings'] ?? 0 }}</div>
                                     <div class="{{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-500' }}">Hotovo {{ $cell['counts']['doneTotal'] ?? 0 }}</div>
+                                    @if ($isOverloadedDay)
+                                        <div class="{{ $cell['isSelected'] ? 'text-fuchsia-200' : 'text-fuchsia-700' }}">Pretizeni 8+</div>
+                                    @endif
                                 </div>
                             </a>
                         @endforeach
