@@ -70,8 +70,13 @@ class CallController extends Controller
             $company->update(['status' => 'contacted']);
         }
 
+        $finishRouteParams = ['call' => $call];
+        if ($request->boolean('caller_mode')) {
+            $finishRouteParams['caller_mode'] = 1;
+        }
+
         return redirect()
-            ->route('calls.finish', $call)
+            ->route('calls.finish', $finishRouteParams)
             ->with('status', 'Hovor byl zahajen. Po ukonceni doplnte vysledek, poznamku a dalsi kroky.');
     }
 
@@ -146,13 +151,22 @@ class CallController extends Controller
         $this->syncFirstContactedAt($call);
         $this->syncCompanyStatus($call, $companyStatus);
 
-        $baseMessage = (string) $request->input('flow_mode') === 'finish'
+        $isFinishFlow = (string) $request->input('flow_mode') === 'finish';
+        $isCallerMode = $request->boolean('caller_mode');
+
+        $baseMessage = $isFinishFlow
             ? 'Hovor byl ukoncen a ulozen.'
             : 'Hovor byl upraven.';
 
         $statusMessage = $this->buildSavedStatusMessage($baseMessage, $createdItems);
         $wantsNextCompany = (string) $request->input('submit_action') === 'save_next_company'
-            && (string) $request->input('flow_mode') === 'finish';
+            && $isFinishFlow;
+
+        if ($isCallerMode && $isFinishFlow) {
+            return redirect()
+                ->route('caller-mode.index')
+                ->with('status', $statusMessage);
+        }
 
         if ($wantsNextCompany) {
             return redirect()

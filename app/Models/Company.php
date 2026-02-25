@@ -15,6 +15,8 @@ class Company extends Model
         'name',
         'ico',
         'website',
+        'contact_person',
+        'phone',
         'status',
         'notes',
         'assigned_user_id',

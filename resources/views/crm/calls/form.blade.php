@@ -1,6 +1,7 @@
 @php
     $flowMode = $flowMode ?? ($call->exists ? 'edit' : 'create');
     $isFinishFlow = $flowMode === 'finish';
+    $isCallerMode = request()->boolean('caller_mode');
     $isCreateFlow = $flowMode === 'create';
     $titleText = $isFinishFlow ? 'Ukoncit hovor' : ($call->exists ? 'Upravit hovor' : 'Novy hovor');
     $submitText = $isFinishFlow ? 'Ukoncit a ulozit hovor' : 'Ulozit';
@@ -36,6 +37,9 @@
             @method('PUT')
         @endif
         <input type="hidden" name="flow_mode" value="{{ $flowMode }}">
+        @if ($isCallerMode)
+            <input type="hidden" name="caller_mode" value="1">
+        @endif
 
         <div>
             <label for="company_id" class="block text-sm font-medium text-slate-700">Firma</label>
@@ -187,13 +191,13 @@
 
         <div class="flex flex-wrap items-center gap-3">
             <button type="submit" class="rounded-md {{ $isFinishFlow ? 'bg-emerald-600' : 'bg-slate-900' }} px-4 py-2 text-sm font-medium text-white">{{ $submitText }}</button>
-            @if ($isFinishFlow)
+            @if ($isFinishFlow && ! $isCallerMode)
                 <button type="submit" name="submit_action" value="save_next_company" class="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white">
                     Ukoncit a dalsi firma
                 </button>
             @endif
             @if ($call->exists)
-                <a href="{{ route('calls.show', $call) }}" class="text-sm text-slate-600 hover:text-slate-900">Zrusit</a>
+                <a href="{{ $isCallerMode ? route('caller-mode.index') : route('calls.show', $call) }}" class="text-sm text-slate-600 hover:text-slate-900">Zrusit</a>
             @else
                 <a href="{{ route('calls.index') }}" class="text-sm text-slate-600 hover:text-slate-900">Zrusit</a>
             @endif

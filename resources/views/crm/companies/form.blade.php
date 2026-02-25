@@ -56,6 +56,23 @@
             @enderror
         </div>
 
+        <div class="grid gap-6 sm:grid-cols-2">
+            <div>
+                <label for="contact_person" class="block text-sm font-medium text-slate-700">Kontaktni osoba</label>
+                <input id="contact_person" name="contact_person" type="text" value="{{ old('contact_person', $company->contact_person) }}" class="mt-1 w-full rounded-md border-slate-300">
+                @error('contact_person')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label for="phone" class="block text-sm font-medium text-slate-700">Telefon</label>
+                <input id="phone" name="phone" type="text" value="{{ old('phone', $company->phone) }}" class="mt-1 w-full rounded-md border-slate-300" placeholder="+420...">
+                @error('phone')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+
         @if ($isManager)
             <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
                 <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Prirazeni a call queue</h2>

@@ -40,6 +40,11 @@
                 @if ($company->website)
                     <a href="{{ $company->website }}" target="_blank" rel="noreferrer" class="rounded-md bg-slate-100 px-3 py-1.5 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200">Otevrit web</a>
                 @endif
+                @if ($company->phone)
+                    <a href="tel:{{ preg_replace('/\s+/', '', $company->phone) }}" class="rounded-md bg-emerald-50 px-3 py-1.5 text-emerald-800 ring-1 ring-emerald-200 hover:bg-emerald-100">
+                        Volat {{ $company->phone }}
+                    </a>
+                @endif
                 @if ($kurzyIcoUrl)
                     <a href="{{ $kurzyIcoUrl }}" target="_blank" rel="noreferrer" class="rounded-md bg-blue-50 px-3 py-1.5 text-blue-800 ring-1 ring-blue-200 hover:bg-blue-100">Kurzy.cz podle ICO</a>
                 @endif
@@ -63,6 +68,14 @@
                             -
                         @endif
                     </dd>
+                </div>
+                <div>
+                    <dt class="text-slate-500">Kontaktni osoba</dt>
+                    <dd class="font-medium">{{ $company->contact_person ?: '-' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-slate-500">Telefon</dt>
+                    <dd class="font-medium">{{ $company->phone ?: '-' }}</dd>
                 </div>
                 <div>
                     <dt class="text-slate-500">Vytvoreno</dt>

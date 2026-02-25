@@ -16,6 +16,7 @@
                 'title' => 'Prace',
                 'links' => [
                     ['Dashboard', 'dashboard'],
+                    ['Caller mode', 'caller-mode.index'],
                     ['Moje fronta', 'companies.queue.mine'],
                     ['Firmy', 'companies.index'],
                 ],
@@ -31,6 +32,13 @@
                 ],
             ],
         ];
+
+        if (auth()->check() && auth()->user()?->isManager()) {
+            $navSections[0]['links'] = array_values(array_filter(
+                $navSections[0]['links'],
+                fn (array $link) => $link[1] !== 'caller-mode.index'
+            ));
+        }
 
         if (auth()->check() && auth()->user()?->isManager()) {
             $navSections[] = [

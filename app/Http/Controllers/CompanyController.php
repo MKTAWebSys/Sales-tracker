@@ -390,6 +390,8 @@ class CompanyController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'ico' => ['nullable', 'string', 'max:32'],
             'website' => ['nullable', 'url', 'max:255'],
+            'contact_person' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:64'],
             'status' => ['required', 'string', 'max:50'],
             'notes' => ['nullable', 'string'],
             'assigned_user_id' => ['nullable', 'exists:users,id'],
