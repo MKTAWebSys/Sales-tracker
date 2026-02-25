@@ -242,6 +242,24 @@ class CompanyController extends Controller
         return redirect()->route('companies.show', $targetId);
     }
 
+    public function queueMine(Request $request): View
+    {
+        $user = $request->user();
+        abort_unless($user, 401);
+
+        $companies = Company::query()
+            ->with(['assignedUser', 'firstCaller'])
+            ->queuedForCaller($user->id)
+            ->orderBy('first_caller_assigned_at')
+            ->orderBy('id')
+            ->paginate(25)
+            ->withQueryString();
+
+        return view('crm.companies.queue-mine', [
+            'companies' => $companies,
+        ]);
+    }
+
     public function edit(Company $company): View
     {
         return view('crm.companies.form', [

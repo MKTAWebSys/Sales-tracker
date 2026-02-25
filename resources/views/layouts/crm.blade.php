@@ -17,6 +17,7 @@
                 @php
                     $links = [
                         ['Dashboard', 'dashboard'],
+                        ['Moje fronta', 'companies.queue.mine'],
                         ['Firmy', 'companies.index'],
                         ['Hovory', 'calls.index'],
                         ['Follow-upy', 'follow-ups.index'],

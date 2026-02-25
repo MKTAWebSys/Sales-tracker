@@ -10,6 +10,9 @@
     $myCompaniesParams = ($isManagerView && $viewedUserId && auth()->id() !== $viewedUserId)
         ? ['assigned_user_id' => $viewedUserId, 'mine' => 0]
         : ['mine' => 1];
+    $myQueueParams = ($isManagerView && $viewedUserId && auth()->id() !== $viewedUserId)
+        ? ['first_caller_user_id' => $viewedUserId, 'status' => 'new', 'mine' => 0]
+        : [];
     $myFollowUpsOpenParams = ($isManagerView && $viewedUserId && auth()->id() !== $viewedUserId)
         ? ['assigned_user_id' => $viewedUserId, 'mine' => 0, 'status' => 'open']
         : ['mine' => 1, 'status' => 'open'];
@@ -137,6 +140,10 @@
                 </div>
             @endif
             <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                <a href="{{ $isViewingOtherUser ? route('companies.index', array_merge($myQueueParams, ['mine' => 0])) : route('companies.queue.mine') }}" class="rounded-lg border border-emerald-200 bg-emerald-50/30 p-3 transition hover:bg-emerald-50/50">
+                    <div class="text-xs text-emerald-700">{{ $isViewingOtherUser ? 'Fronta uzivatele (new)' : 'Moje fronta k obvolani' }}</div>
+                    <div class="mt-1 text-xl font-semibold text-emerald-800">{{ $myStats['companies'] ?? 0 }}</div>
+                </a>
                 <a href="{{ route('companies.index', $myCompaniesParams) }}" class="rounded-lg border border-slate-200 p-3 transition hover:bg-slate-50">
                     <div class="text-xs text-slate-500">{{ $isViewingOtherUser ? 'Firmy uzivatele' : 'Moje firmy' }}</div>
                     <div class="mt-1 text-xl font-semibold">{{ $myStats['companies'] ?? 0 }}</div>
@@ -157,6 +164,9 @@
             </div>
 
             <div class="mt-4 flex items-center gap-3 text-sm">
+                @if (! $isViewingOtherUser)
+                    <a href="{{ route('companies.queue.mine') }}" class="text-emerald-700 underline">Moje fronta k obvolani</a>
+                @endif
                 <a href="{{ route('companies.index', $myCompaniesParams) }}" class="text-slate-700 underline">{{ $isViewingOtherUser ? 'Firmy uzivatele' : 'Moje firmy' }}</a>
                 <a href="{{ route('follow-ups.index', $myFollowUpsOpenParams) }}" class="text-slate-700 underline">{{ $isViewingOtherUser ? 'Otevrene follow-upy uzivatele' : 'Moje otevrene follow-upy' }}</a>
             </div>
