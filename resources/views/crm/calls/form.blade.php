@@ -33,7 +33,7 @@
         @endif
     </div>
 
-    <form method="POST" action="{{ $call->exists ? route('calls.update', $call) : route('calls.store') }}" class="js-call-flow-form space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <form method="POST" action="{{ $call->exists ? route('calls.update', $call) : route('calls.store') }}" class="js-call-flow-form {{ $isActiveNoteOnlyFinish ? 'space-y-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6 pb-28 sm:pb-6' : 'space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200' }}">
         @csrf
         @if ($call->exists)
             @method('PUT')
@@ -54,14 +54,16 @@
             <input type="hidden" name="called_at" value="{{ old('called_at', optional($call->called_at)->format('Y-m-d\\TH:i:s')) }}">
             <input type="hidden" name="outcome" value="pending">
 
-            <div class="rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 p-6 text-white shadow-sm">
+            <div class="rounded-3xl border border-slate-700/70 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 p-6 text-white shadow-xl ring-1 ring-white/10 sm:p-8">
                 <div class="text-center">
-                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Probiha hovor</div>
-                    <div class="mt-3 text-4xl font-semibold tabular-nums sm:text-5xl js-call-live-timer" data-called-at="{{ $call->called_at?->toIso8601String() ?? '' }}">
+                    <div class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300/90">Probiha hovor</div>
+                    <div class="mt-4 text-5xl font-semibold tabular-nums tracking-tight sm:text-6xl js-call-live-timer" data-called-at="{{ $call->called_at?->toIso8601String() ?? '' }}">
                         00:00
                     </div>
-                    <div class="mt-3 text-lg font-medium text-white/90">{{ $company?->name ?? 'Bez firmy' }}</div>
-                    <div class="mt-1 text-xs text-slate-300">Start {{ $call->called_at?->format('Y-m-d H:i:s') ?? '-' }}</div>
+                    <div class="mt-4 text-xl font-medium text-white/95 sm:text-2xl">{{ $company?->name ?? 'Bez firmy' }}</div>
+                    <div class="mt-2 inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200 ring-1 ring-white/10">
+                        Start {{ $call->called_at?->format('Y-m-d H:i:s') ?? '-' }}
+                    </div>
                 </div>
             </div>
         @else
@@ -238,12 +240,12 @@
 
         <div class="flex flex-wrap items-center gap-3">
             @if ($isActiveNoteOnlyFinish)
-                <form method="POST" action="{{ route('calls.end', $call) }}" class="w-full sm:w-auto">
+                <form method="POST" action="{{ route('calls.end', $call) }}" class="js-active-call-end-form w-full sm:w-auto">
                     @csrf
                     @if ($isCallerMode)
                         <input type="hidden" name="caller_mode" value="1">
                     @endif
-                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-md bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700 sm:min-w-[15rem]">
+                    <button type="submit" class="hidden w-full items-center justify-center rounded-md bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700 sm:inline-flex sm:min-w-[15rem]">
                         Ukoncit hovor
                     </button>
                 </form>
@@ -275,16 +277,16 @@
             const callbackPresetsWrap = form.querySelector('.js-callback-presets');
             const followUpInput = form.querySelector('#next_follow_up_at');
             const meetingInput = form.querySelector('#meeting_planned_at');
-            const statusInput = form.querySelector('#company_status');
             const summaryInput = form.querySelector('#summary');
             const presetButtons = Array.from(form.querySelectorAll('.js-followup-preset'));
             const isFinishFlow = {{ $isFinishFlow ? 'true' : 'false' }};
             const finalizeCall = {{ $finalizeCall ? 'true' : 'false' }};
+            const isActiveNoteOnlyFinish = {{ $isActiveNoteOnlyFinish ? 'true' : 'false' }};
             const callId = {{ $call->exists ? (int) $call->id : 'null' }};
             const draftKey = callId ? ('call-finish-summary-draft:' + String(callId)) : null;
             let autosaveTimer = null;
-            let statusAutoTouched = false;
             const liveTimer = form.querySelector('.js-call-live-timer');
+            const quickEndForm = form.querySelector('.js-active-call-end-form');
 
             const formatDuration = function (totalSeconds) {
                 const seconds = Math.max(0, totalSeconds | 0);
@@ -348,10 +350,6 @@
 
                 setDateValue(followUpInput, target);
 
-                if (statusInput && !statusInput.value) {
-                    statusInput.value = 'follow-up';
-                    statusAutoTouched = true;
-                }
             };
 
             const applySmartDefaults = function (outcome) {
@@ -377,25 +375,12 @@
                     if (!hasValue(followUpInput)) {
                         setDateValue(followUpInput, nextBusinessTime(2, 10));
                     }
-                    if (statusInput && !statusInput.value) {
-                        statusInput.value = 'follow-up';
-                        statusAutoTouched = true;
-                    }
                 }
 
                 if (outcome === 'meeting-booked') {
                     if (!hasValue(meetingInput)) {
                         setDateValue(meetingInput, nextBusinessTime(1, 10));
                     }
-                    if (statusInput && !statusInput.value) {
-                        statusInput.value = 'qualified';
-                        statusAutoTouched = true;
-                    }
-                }
-
-                if (outcome === 'not-interested' && statusInput && !statusInput.value) {
-                    statusInput.value = 'lost';
-                    statusAutoTouched = true;
                 }
             };
 
@@ -423,12 +408,6 @@
             if (outcomeSelect) {
                 outcomeSelect.addEventListener('change', updatePanels);
                 updatePanels();
-            }
-
-            if (statusInput) {
-                statusInput.addEventListener('change', function () {
-                    statusAutoTouched = false;
-                });
             }
 
             presetButtons.forEach((button) => {
@@ -464,6 +443,21 @@
                 });
             }
 
+            if (summaryInput && isActiveNoteOnlyFinish) {
+                summaryInput.focus();
+                summaryInput.setSelectionRange(summaryInput.value.length, summaryInput.value.length);
+            }
+
+            if (summaryInput && isActiveNoteOnlyFinish) {
+                summaryInput.addEventListener('keydown', function (event) {
+                    if (event.key !== 'Enter') return;
+                    if (!event.ctrlKey && !event.metaKey) return;
+                    if (!quickEndForm) return;
+                    event.preventDefault();
+                    quickEndForm.requestSubmit();
+                });
+            }
+
             document.addEventListener('keydown', function (event) {
                 if (!isFinishFlow || !finalizeCall || !callbackPresetsWrap || callbackPresetsWrap.classList.contains('hidden')) return;
                 if (!event.altKey || event.ctrlKey || event.metaKey) return;
@@ -492,4 +486,19 @@
             });
         });
     </script>
+
+    @if ($isActiveNoteOnlyFinish)
+        <div class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 backdrop-blur sm:hidden">
+            <form method="POST" action="{{ route('calls.end', $call) }}" class="js-active-call-end-form">
+                @csrf
+                @if ($isCallerMode)
+                    <input type="hidden" name="caller_mode" value="1">
+                @endif
+                <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-rose-600 px-4 py-4 text-base font-semibold text-white shadow-sm hover:bg-rose-700">
+                    Ukoncit hovor
+                </button>
+            </form>
+            <div class="mt-2 text-center text-[11px] text-slate-500">Tip: <kbd class="rounded bg-slate-100 px-1 py-0.5">Ctrl+Enter</kbd> v poznamce</div>
+        </div>
+    @endif
 @endsection
