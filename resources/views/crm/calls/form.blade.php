@@ -8,6 +8,9 @@
     $titleText = $isFinishFlow ? 'Ukoncit hovor' : ($call->exists ? 'Upravit hovor' : 'Novy hovor');
     $submitText = $isFinishFlow ? 'Ukoncit a ulozit hovor' : 'Ulozit';
     $company = $call->company ?? $companies->firstWhere('id', $call->company_id);
+    $finishOutcomeDefault = ($isFinishFlow && $finalizeCall && $call->outcome === 'pending')
+        ? 'callback'
+        : ($call->outcome ?: 'callback');
 @endphp
 
 @extends('layouts.crm', ['title' => $titleText . ' | Call CRM'])
@@ -87,8 +90,8 @@
                     <input type="hidden" name="outcome" value="pending">
                 @else
                     <select id="outcome" name="outcome" class="js-call-outcome mt-1 w-full rounded-md border-slate-300">
-                        @foreach (['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] as $outcome)
-                            <option value="{{ $outcome }}" @selected(old('outcome', $call->outcome ?: 'callback') === $outcome)>
+                        @foreach (($isFinishFlow && $finalizeCall ? ['no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] : ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked']) as $outcome)
+                            <option value="{{ $outcome }}" @selected(old('outcome', $finishOutcomeDefault) === $outcome)>
                                 @switch($outcome)
                                     @case('pending') Rozpracovano @break
                                     @case('no-answer') Nezastizen @break

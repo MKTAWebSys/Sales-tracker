@@ -196,6 +196,13 @@ class CallController extends Controller
         $data = $this->validateCall($request);
         $companyStatus = Arr::pull($data, 'company_status');
 
+        if ($isFinishFlow && $finalizeCall && ($data['outcome'] ?? null) === 'pending') {
+            return redirect()
+                ->back()
+                ->withErrors(['outcome' => 'Pri ukonceni hovoru musite vybrat finalni vysledek (nelze ponechat rozpracovano).'])
+                ->withInput();
+        }
+
         $call->update($data);
         $createdItems = $this->syncNextActions($call);
         $this->syncFirstContactedAt($call);
