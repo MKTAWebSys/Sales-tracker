@@ -97,7 +97,8 @@
                     </div>
                 </div>
             </div>
-        @elseif (! ($isFinishFlow && $finalizeCall))
+        @else
+            @if (! ($isFinishFlow && $finalizeCall))
             <div>
                 <label for="company_id" class="block text-sm font-medium text-slate-700">Firma</label>
                 <select id="company_id" name="company_id" required class="mt-1 w-full rounded-md border-slate-300" @disabled($isFinishFlow)>
@@ -115,17 +116,20 @@
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
+            @endif
 
-            <div class="grid gap-6 sm:grid-cols-2">
+            <div class="{{ $isFinishFlow && $finalizeCall ? '' : 'grid gap-6 sm:grid-cols-2' }}">
+                @if (! ($isFinishFlow && $finalizeCall))
+                    <div>
+                        <label for="called_at" class="block text-sm font-medium text-slate-700">{{ $isFinishFlow ? 'Cas startu hovoru' : 'Datum a cas hovoru' }}</label>
+                        <input id="called_at" name="called_at" type="datetime-local" required value="{{ old('called_at', optional($call->called_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300" @readonly($isFinishFlow)>
+                        @error('called_at')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                @endif
                 <div>
-                    <label for="called_at" class="block text-sm font-medium text-slate-700">{{ $isFinishFlow ? 'Cas startu hovoru' : 'Datum a cas hovoru' }}</label>
-                    <input id="called_at" name="called_at" type="datetime-local" required value="{{ old('called_at', optional($call->called_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300" @readonly($isFinishFlow)>
-                    @error('called_at')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700">Vysledek</label>
+                    <label class="block text-sm font-medium text-slate-700">{{ $isFinishFlow && $finalizeCall ? 'Vysledek hovoru' : 'Vysledek' }}</label>
                     <select id="outcome" name="outcome" class="js-call-outcome sr-only">
                         @foreach (($isFinishFlow && $finalizeCall ? ['no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] : ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked']) as $outcome)
                             <option value="{{ $outcome }}" @selected(old('outcome', $finishOutcomeDefault) === $outcome)>
