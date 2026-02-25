@@ -23,6 +23,7 @@
             [
                 'title' => 'Aktivity',
                 'links' => [
+                    ['Kalendar', 'calendar.index'],
                     ['Hovory', 'calls.index'],
                     ['Follow-upy', 'follow-ups.index'],
                     ['Predani leadu', 'lead-transfers.index'],

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CallController;
+use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FollowUpController;
@@ -17,6 +18,7 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     Route::post('/dashboard/user-target/{user}', [DashboardController::class, 'updateUserTarget'])->name('dashboard.user-target.update');
     Route::resource('companies', CompanyController::class)->only([
         'index',
