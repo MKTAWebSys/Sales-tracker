@@ -99,6 +99,7 @@ Pracovni plan pro prvni verzi interni webove aplikace `Call CRM MVP`.
   - import
 - Reseni duplicit (firma podle ICO / nazvu)
 - Log importu a chybove radky
+- Pozdeji: export `.ics` (den/tyden) jako prvni krok k Outlook/Google integraci kalendare
 - Omezit scope MVP: implementovat az po stabilnim CRUD
 
 ## Poznamky

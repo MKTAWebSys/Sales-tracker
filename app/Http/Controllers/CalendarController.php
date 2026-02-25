@@ -42,17 +42,26 @@ class CalendarController extends Controller
             ->with(['company'])
             ->whereIn('status', ['planned', 'confirmed'])
             ->whereBetween('scheduled_at', [$rangeStart, $rangeEnd]);
+        $rangeDoneFollowUpsQuery = FollowUp::query()
+            ->where('status', 'done')
+            ->whereBetween('due_at', [$rangeStart, $rangeEnd]);
+        $rangeDoneMeetingsQuery = Meeting::query()
+            ->where('status', 'done')
+            ->whereBetween('scheduled_at', [$rangeStart, $rangeEnd]);
 
         $this->applyAgendaFilters($selectedFollowUpsQuery, $selectedMeetingsQuery, $request, $user, $isManager, $mine);
         $this->applyAgendaFilters($rangeFollowUpsQuery, $rangeMeetingsQuery, $request, $user, $isManager, $mine);
+        $this->applyAgendaFilters($rangeDoneFollowUpsQuery, $rangeDoneMeetingsQuery, $request, $user, $isManager, $mine);
 
         $followUps = $selectedFollowUpsQuery->orderBy('due_at')->get();
         $meetings = $selectedMeetingsQuery->orderBy('scheduled_at')->get();
         $rangeFollowUps = $rangeFollowUpsQuery->orderBy('due_at')->get();
         $rangeMeetings = $rangeMeetingsQuery->orderBy('scheduled_at')->get();
+        $rangeDoneFollowUps = $rangeDoneFollowUpsQuery->orderBy('due_at')->get();
+        $rangeDoneMeetings = $rangeDoneMeetingsQuery->orderBy('scheduled_at')->get();
 
         $items = $this->buildTimelineItems($followUps, $meetings);
-        $dayCounts = $this->buildDayCounts($rangeFollowUps, $rangeMeetings);
+        $dayCounts = $this->buildDayCounts($rangeFollowUps, $rangeMeetings, $rangeDoneFollowUps, $rangeDoneMeetings);
         $calendarGrid = $this->buildCalendarGrid($date, $viewMode, $dayCounts);
 
         return view('crm.calendar.index', [
@@ -74,7 +83,10 @@ class CalendarController extends Controller
             'rangeCounts' => [
                 'followUps' => $rangeFollowUps->count(),
                 'meetings' => $rangeMeetings->count(),
+                'doneFollowUps' => $rangeDoneFollowUps->count(),
+                'doneMeetings' => $rangeDoneMeetings->count(),
                 'total' => $rangeFollowUps->count() + $rangeMeetings->count(),
+                'doneTotal' => $rangeDoneFollowUps->count() + $rangeDoneMeetings->count(),
             ],
             'calendarGrid' => $calendarGrid,
         ]);
@@ -121,7 +133,7 @@ class CalendarController extends Controller
         };
     }
 
-    private function buildDayCounts(Collection $followUps, Collection $meetings): array
+    private function buildDayCounts(Collection $followUps, Collection $meetings, Collection $doneFollowUps, Collection $doneMeetings): array
     {
         $counts = [];
 
@@ -131,9 +143,11 @@ class CalendarController extends Controller
                 continue;
             }
 
-            $counts[$key] = $counts[$key] ?? ['total' => 0, 'followUps' => 0, 'meetings' => 0];
+            $counts[$key] = $counts[$key] ?? $this->emptyDayCount();
             $counts[$key]['total']++;
             $counts[$key]['followUps']++;
+            $counts[$key]['todoTotal']++;
+            $counts[$key]['todoFollowUps']++;
         }
 
         foreach ($meetings as $meeting) {
@@ -142,12 +156,51 @@ class CalendarController extends Controller
                 continue;
             }
 
-            $counts[$key] = $counts[$key] ?? ['total' => 0, 'followUps' => 0, 'meetings' => 0];
+            $counts[$key] = $counts[$key] ?? $this->emptyDayCount();
             $counts[$key]['total']++;
             $counts[$key]['meetings']++;
+            $counts[$key]['todoTotal']++;
+            $counts[$key]['todoMeetings']++;
+        }
+
+        foreach ($doneFollowUps as $followUp) {
+            $key = $followUp->due_at?->toDateString();
+            if (! $key) {
+                continue;
+            }
+
+            $counts[$key] = $counts[$key] ?? $this->emptyDayCount();
+            $counts[$key]['doneTotal']++;
+            $counts[$key]['doneFollowUps']++;
+        }
+
+        foreach ($doneMeetings as $meeting) {
+            $key = $meeting->scheduled_at?->toDateString();
+            if (! $key) {
+                continue;
+            }
+
+            $counts[$key] = $counts[$key] ?? $this->emptyDayCount();
+            $counts[$key]['doneTotal']++;
+            $counts[$key]['doneMeetings']++;
         }
 
         return $counts;
+    }
+
+    private function emptyDayCount(): array
+    {
+        return [
+            'total' => 0,
+            'followUps' => 0,
+            'meetings' => 0,
+            'todoTotal' => 0,
+            'todoFollowUps' => 0,
+            'todoMeetings' => 0,
+            'doneTotal' => 0,
+            'doneFollowUps' => 0,
+            'doneMeetings' => 0,
+        ];
     }
 
     private function buildCalendarGrid(Carbon $date, string $viewMode, array $dayCounts): array
@@ -162,7 +215,7 @@ class CalendarController extends Controller
                     'isCurrentMonth' => true,
                     'isSelected' => true,
                     'isToday' => $date->isSameDay(now()),
-                    'counts' => $dayCounts[$key] ?? ['total' => 0, 'followUps' => 0, 'meetings' => 0],
+                    'counts' => $dayCounts[$key] ?? $this->emptyDayCount(),
                 ]],
             ];
         }
@@ -179,7 +232,7 @@ class CalendarController extends Controller
                     'isCurrentMonth' => true,
                     'isSelected' => $day->isSameDay($date),
                     'isToday' => $day->isSameDay(now()),
-                    'counts' => $dayCounts[$key] ?? ['total' => 0, 'followUps' => 0, 'meetings' => 0],
+                    'counts' => $dayCounts[$key] ?? $this->emptyDayCount(),
                 ];
             }
 
@@ -199,7 +252,7 @@ class CalendarController extends Controller
                     'isCurrentMonth' => $day->month === $date->month,
                     'isSelected' => $day->isSameDay($date),
                     'isToday' => $day->isSameDay(now()),
-                    'counts' => $dayCounts[$key] ?? ['total' => 0, 'followUps' => 0, 'meetings' => 0],
+                    'counts' => $dayCounts[$key] ?? $this->emptyDayCount(),
                 ];
             }
             $rows[] = $row;
@@ -219,6 +272,7 @@ class CalendarController extends Controller
                     'subtitle' => $followUp->assignedUser?->name ? 'Prirazeno: '.$followUp->assignedUser->name : 'Neprirazeno',
                     'note' => $followUp->note,
                     'status' => $followUp->status,
+                    'isOverdue' => $followUp->due_at ? $followUp->due_at->isPast() : false,
                     'model' => $followUp,
                     'detail_url' => route('follow-ups.show', $followUp),
                 ];
@@ -231,6 +285,7 @@ class CalendarController extends Controller
                     'subtitle' => 'Forma: '.$meeting->mode,
                     'note' => $meeting->note,
                     'status' => $meeting->status,
+                    'isOverdue' => $meeting->scheduled_at ? $meeting->scheduled_at->isPast() : false,
                     'model' => $meeting,
                     'detail_url' => route('meetings.show', $meeting),
                 ];

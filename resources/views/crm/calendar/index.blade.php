@@ -5,6 +5,7 @@
         $todayDate = now()->format('Y-m-d');
         $isToday = $calendarDate->isSameDay(now());
         $viewMode = $viewMode ?? 'week';
+        $today = now()->startOfDay();
 
         if ($viewMode === 'day') {
             $prevDate = $calendarDate->copy()->subDay()->format('Y-m-d');
@@ -88,7 +89,12 @@
         <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-blue-200">
             <div class="text-xs text-blue-700">Aktivity v zobrazenem obdobi</div>
             <div class="mt-1 text-2xl font-semibold text-blue-800">{{ $rangeCounts['total'] ?? $counts['total'] }}</div>
-            <div class="mt-1 text-xs text-slate-500">follow-upy + schuzky</div>
+            <div class="mt-1 text-xs text-slate-500">
+                follow-upy + schuzky
+                @if (!empty($rangeCounts['doneTotal']))
+                    | hotovo {{ $rangeCounts['doneTotal'] }}
+                @endif
+            </div>
         </div>
         <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
             <div class="text-xs text-slate-500">Dnes (vybrany den)</div>
@@ -103,7 +109,11 @@
         @if (($calendarGrid['type'] ?? '') === 'day')
             @php $cell = $calendarGrid['days'][0] ?? null; @endphp
             @if ($cell)
-                <div class="rounded-xl border p-4 {{ $cell['counts']['total'] > 0 ? 'border-blue-200 bg-blue-50/30' : 'border-slate-200 bg-slate-50/40' }}">
+                @php
+                    $isOverdueDay = $cell['date']->lt($today) && ($cell['counts']['todoTotal'] ?? 0) > 0;
+                    $hasTodo = ($cell['counts']['todoTotal'] ?? 0) > 0;
+                @endphp
+                <div class="rounded-xl border p-4 {{ $isOverdueDay ? 'border-rose-200 bg-rose-50/30' : ($hasTodo ? 'border-blue-200 bg-blue-50/30' : 'border-slate-200 bg-slate-50/40') }}">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <div class="text-sm font-semibold">{{ $cell['date']->format('l') }} {{ $cell['date']->format('Y-m-d') }}</div>
@@ -113,34 +123,77 @@
                     </div>
                     <div class="mt-4 grid gap-3 sm:grid-cols-3">
                         <div class="rounded-lg bg-white p-3 ring-1 ring-slate-200">
-                            <div class="text-xs text-slate-500">Celkem</div>
-                            <div class="mt-1 text-xl font-semibold">{{ $cell['counts']['total'] }}</div>
+                            <div class="text-xs text-slate-500">Neudelano</div>
+                            <div class="mt-1 text-xl font-semibold">{{ $cell['counts']['todoTotal'] ?? 0 }}</div>
                         </div>
                         <div class="rounded-lg bg-amber-50 p-3 ring-1 ring-amber-200">
                             <div class="text-xs text-amber-700">Follow-upy</div>
                             <div class="mt-1 text-xl font-semibold text-amber-800">{{ $cell['counts']['followUps'] }}</div>
                         </div>
                         <div class="rounded-lg bg-emerald-50 p-3 ring-1 ring-emerald-200">
-                            <div class="text-xs text-emerald-700">Schuzky</div>
-                            <div class="mt-1 text-xl font-semibold text-emerald-800">{{ $cell['counts']['meetings'] }}</div>
+                            <div class="text-xs text-emerald-700">Hotovo</div>
+                            <div class="mt-1 text-xl font-semibold text-emerald-800">{{ $cell['counts']['doneTotal'] ?? 0 }}</div>
                         </div>
                     </div>
                 </div>
             @endif
         @elseif (($calendarGrid['type'] ?? '') === 'week')
-            <div class="grid gap-3 md:grid-cols-7">
+            <div class="grid gap-4 lg:grid-cols-[1fr_18rem]">
+                <div class="grid gap-3 md:grid-cols-7">
                 @foreach ($calendarGrid['days'] as $index => $cell)
+                    @php
+                        $isOverdueDay = $cell['date']->lt($today) && ($cell['counts']['todoTotal'] ?? 0) > 0;
+                        $hasDone = ($cell['counts']['doneTotal'] ?? 0) > 0;
+                        $baseClass = $cell['isSelected']
+                            ? 'border-slate-900 bg-slate-900 text-white'
+                            : ($isOverdueDay
+                                ? 'border-rose-200 bg-rose-50/35 hover:bg-rose-50/55'
+                                : (($cell['counts']['todoTotal'] ?? 0) > 0
+                                    ? 'border-blue-200 bg-blue-50/30 hover:bg-blue-50/50'
+                                    : ($hasDone
+                                        ? 'border-emerald-200 bg-emerald-50/20 hover:bg-emerald-50/35'
+                                        : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50')));
+                    @endphp
                     <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['date' => $cell['key'], 'view' => 'week'])) }}"
-                       class="block rounded-xl border p-3 transition {{ $cell['isSelected'] ? 'border-slate-900 bg-slate-900 text-white' : ($cell['counts']['total'] > 0 ? 'border-blue-200 bg-blue-50/30 hover:bg-blue-50/50' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50') }}">
+                       class="block rounded-xl border p-3 transition {{ $baseClass }}">
                         <div class="text-xs {{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-500' }}">{{ $dayHeaders[$index] }}</div>
                         <div class="mt-1 text-lg font-semibold">{{ $cell['date']->format('j.n.') }}</div>
-                        <div class="mt-2 text-xs {{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-600' }}">Celkem: {{ $cell['counts']['total'] }}</div>
+                        <div class="mt-2 text-xs {{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-600' }}">Neudelano: {{ $cell['counts']['todoTotal'] ?? 0 }}</div>
                         <div class="mt-1 flex gap-2 text-[11px]">
-                            <span class="{{ $cell['isSelected'] ? 'text-amber-200' : 'text-amber-700' }}">FU {{ $cell['counts']['followUps'] }}</span>
-                            <span class="{{ $cell['isSelected'] ? 'text-emerald-200' : 'text-emerald-700' }}">SCH {{ $cell['counts']['meetings'] }}</span>
+                            <span class="{{ $cell['isSelected'] ? 'text-amber-200' : 'text-amber-700' }}">FU {{ $cell['counts']['todoFollowUps'] ?? 0 }}</span>
+                            <span class="{{ $cell['isSelected'] ? 'text-emerald-200' : 'text-emerald-700' }}">SCH {{ $cell['counts']['todoMeetings'] ?? 0 }}</span>
+                        </div>
+                        <div class="mt-1 text-[11px] {{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-600' }}">
+                            Hotovo: {{ $cell['counts']['doneTotal'] ?? 0 }}
                         </div>
                     </a>
                 @endforeach
+                </div>
+
+                <div class="rounded-xl border border-slate-200 bg-white p-4">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tydenni souhrn</div>
+                    <div class="mt-1 text-sm text-slate-600">Pocet aktivit za den: hotovo vs neudelano.</div>
+                    <div class="mt-4 space-y-2">
+                        @foreach ($calendarGrid['days'] as $index => $cell)
+                            @php
+                                $isOverdueDay = $cell['date']->lt($today) && ($cell['counts']['todoTotal'] ?? 0) > 0;
+                            @endphp
+                            <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['date' => $cell['key'], 'view' => 'week'])) }}"
+                               class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm transition {{ $cell['isSelected'] ? 'border-slate-900 bg-slate-900 text-white' : ($isOverdueDay ? 'border-rose-200 bg-rose-50/30 hover:bg-rose-50/50' : 'border-slate-200 hover:bg-slate-50') }}">
+                                <div class="min-w-0">
+                                    <div class="font-medium">{{ $dayHeaders[$index] }} {{ $cell['date']->format('j.n.') }}</div>
+                                    <div class="text-xs {{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-500' }}">
+                                        FU {{ $cell['counts']['todoFollowUps'] ?? 0 }} | SCH {{ $cell['counts']['todoMeetings'] ?? 0 }}
+                                    </div>
+                                </div>
+                                <div class="text-right text-xs">
+                                    <div class="{{ $cell['isSelected'] ? 'text-emerald-200' : 'text-emerald-700' }}">Hotovo {{ $cell['counts']['doneTotal'] ?? 0 }}</div>
+                                    <div class="{{ $cell['isSelected'] ? 'text-amber-200' : 'text-amber-700' }}">Neudelano {{ $cell['counts']['todoTotal'] ?? 0 }}</div>
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         @else
             <div class="grid grid-cols-7 gap-2 text-xs font-medium text-slate-500">
@@ -152,18 +205,32 @@
                 @foreach ($calendarGrid['rows'] as $row)
                     <div class="grid grid-cols-7 gap-2">
                         @foreach ($row as $cell)
+                            @php
+                                $isOverdueDay = $cell['date']->lt($today) && ($cell['counts']['todoTotal'] ?? 0) > 0;
+                                $hasDone = ($cell['counts']['doneTotal'] ?? 0) > 0;
+                                $monthCellClass = $cell['isSelected']
+                                    ? 'border-slate-900 bg-slate-900 text-white'
+                                    : ($isOverdueDay
+                                        ? 'border-rose-200 bg-rose-50/25 hover:bg-rose-50/40'
+                                        : ((($cell['counts']['todoTotal'] ?? 0) > 0)
+                                            ? 'border-blue-200 bg-blue-50/25 hover:bg-blue-50/40'
+                                            : ($hasDone
+                                                ? 'border-emerald-200 bg-emerald-50/15 hover:bg-emerald-50/30'
+                                                : 'border-slate-200 bg-white hover:bg-slate-50')));
+                            @endphp
                             <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['date' => $cell['key'], 'view' => 'month'])) }}"
-                               class="block min-h-24 rounded-xl border p-2 transition {{ $cell['isSelected'] ? 'border-slate-900 bg-slate-900 text-white' : ($cell['counts']['total'] > 0 ? 'border-blue-200 bg-blue-50/25 hover:bg-blue-50/40' : 'border-slate-200 bg-white hover:bg-slate-50') }} {{ ! $cell['isCurrentMonth'] ? 'opacity-60' : '' }}">
+                               class="block min-h-24 rounded-xl border p-2 transition {{ $monthCellClass }} {{ ! $cell['isCurrentMonth'] ? 'opacity-60' : '' }}">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-sm font-semibold">{{ $cell['date']->format('j') }}</span>
                                     @if ($cell['isToday'])
                                         <span class="rounded-full px-1.5 py-0.5 text-[10px] {{ $cell['isSelected'] ? 'bg-white text-slate-900' : 'bg-slate-900 text-white' }}">dnes</span>
                                     @endif
                                 </div>
-                                <div class="mt-2 text-[11px] {{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-600' }}">{{ $cell['counts']['total'] }} aktivit</div>
+                                <div class="mt-2 text-[11px] {{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-600' }}">Neudelano {{ $cell['counts']['todoTotal'] ?? 0 }}</div>
                                 <div class="mt-1 space-y-0.5 text-[10px]">
-                                    <div class="{{ $cell['isSelected'] ? 'text-amber-200' : 'text-amber-700' }}">FU {{ $cell['counts']['followUps'] }}</div>
-                                    <div class="{{ $cell['isSelected'] ? 'text-emerald-200' : 'text-emerald-700' }}">SCH {{ $cell['counts']['meetings'] }}</div>
+                                    <div class="{{ $cell['isSelected'] ? 'text-amber-200' : 'text-amber-700' }}">FU {{ $cell['counts']['todoFollowUps'] ?? 0 }}</div>
+                                    <div class="{{ $cell['isSelected'] ? 'text-emerald-200' : 'text-emerald-700' }}">SCH {{ $cell['counts']['todoMeetings'] ?? 0 }}</div>
+                                    <div class="{{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-500' }}">Hotovo {{ $cell['counts']['doneTotal'] ?? 0 }}</div>
                                 </div>
                             </a>
                         @endforeach
@@ -182,9 +249,10 @@
         @forelse ($items as $item)
             @php
                 $isFollowUp = $item['type'] === 'follow-up';
-                $containerClass = $isFollowUp
-                    ? 'border-amber-200 bg-amber-50/30'
-                    : 'border-emerald-200 bg-emerald-50/30';
+                $isOverdueItem = !empty($item['isOverdue']) && ! $calendarDate->isFuture();
+                $containerClass = $isOverdueItem
+                    ? 'border-rose-200 bg-rose-50/30'
+                    : ($isFollowUp ? 'border-amber-200 bg-amber-50/30' : 'border-emerald-200 bg-emerald-50/30');
             @endphp
             <div class="rounded-xl border {{ $containerClass }} p-4 shadow-sm">
                 <div class="flex flex-wrap items-start justify-between gap-3">
@@ -197,6 +265,9 @@
                             <span class="text-sm font-medium text-slate-900">{{ $item['title'] }}</span>
                         </div>
                         <div class="mt-1 text-sm text-slate-600">{{ $item['subtitle'] }}</div>
+                        @if ($isOverdueItem)
+                            <div class="mt-1 text-xs font-medium text-rose-700">Po terminu / po case</div>
+                        @endif
                         @if (!empty($item['note']))
                             <div class="mt-2 line-clamp-3 whitespace-pre-line text-sm text-slate-700">{{ $item['note'] }}</div>
                         @endif
