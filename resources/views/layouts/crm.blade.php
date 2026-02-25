@@ -102,13 +102,34 @@
             <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
                 @if ($activeCallBanner)
                     <div class="mb-4 rounded-xl border border-violet-200 bg-violet-50/80 p-4 text-sm text-violet-900 shadow-sm ring-1 ring-violet-100">
-                        <div class="flex flex-wrap items-center justify-between gap-3">
-                            <div>
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1">
                                 <div class="font-semibold">Probiha hovor</div>
                                 <div class="mt-1">
                                     {{ $activeCallBanner->company?->name ?? 'Bez firmy' }}
                                     | start {{ $activeCallBanner->called_at?->format('Y-m-d H:i:s') ?? '-' }}
+                                    | bezi
+                                    <span class="js-active-call-timer font-semibold" data-called-at="{{ $activeCallBanner->called_at?->toIso8601String() ?? '' }}">00:00</span>
                                 </div>
+                                <form method="POST" action="{{ route('calls.update', $activeCallBanner) }}" class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-start">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="hidden" name="flow_mode" value="finish">
+                                    <input type="hidden" name="company_id" value="{{ $activeCallBanner->company_id }}">
+                                    <input type="hidden" name="called_at" value="{{ $activeCallBanner->called_at?->format('Y-m-d H:i:s') }}">
+                                    @if (request()->routeIs('caller-mode.*'))
+                                        <input type="hidden" name="caller_mode" value="1">
+                                    @endif
+                                    <textarea
+                                        name="summary"
+                                        rows="2"
+                                        class="w-full rounded-md border-violet-200 bg-white/90 text-sm text-slate-900 placeholder:text-slate-400 focus:border-violet-400 focus:ring-violet-400 sm:min-w-[22rem]"
+                                        placeholder="Rychla poznamka behem hovoru..."
+                                    >{{ old('summary', $activeCallBanner->summary) }}</textarea>
+                                    <button type="submit" class="rounded-md bg-violet-700 px-3 py-2 text-xs font-medium text-white sm:mt-0">
+                                        Ulozit poznamku
+                                    </button>
+                                </form>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
                                 <a href="{{ route('calls.finish', ['call' => $activeCallBanner, 'caller_mode' => request()->routeIs('caller-mode.*') ? 1 : null]) }}"
@@ -211,6 +232,28 @@
             document.addEventListener('DOMContentLoaded', function () {
                 const activeCallReturnUrl = @json(route('calls.finish', ['call' => $activeCallBanner]));
                 const activeCompanyId = @json((int) $activeCallBanner->company_id);
+                const activeCallTimer = document.querySelector('.js-active-call-timer');
+                const calledAtIso = activeCallTimer ? String(activeCallTimer.getAttribute('data-called-at') || '') : '';
+
+                const formatDuration = function (totalSeconds) {
+                    const seconds = Math.max(0, totalSeconds | 0);
+                    const hrs = Math.floor(seconds / 3600);
+                    const mins = Math.floor((seconds % 3600) / 60);
+                    const secs = seconds % 60;
+                    const pad = (n) => String(n).padStart(2, '0');
+                    return hrs > 0 ? (pad(hrs) + ':' + pad(mins) + ':' + pad(secs)) : (pad(mins) + ':' + pad(secs));
+                };
+
+                if (activeCallTimer && calledAtIso) {
+                    const startedAt = new Date(calledAtIso);
+                    const tick = function () {
+                        const now = new Date();
+                        const diffSeconds = Math.floor((now.getTime() - startedAt.getTime()) / 1000);
+                        activeCallTimer.textContent = formatDuration(diffSeconds);
+                    };
+                    tick();
+                    window.setInterval(tick, 1000);
+                }
 
                 document.querySelectorAll('a[href*="/start-call"]').forEach(function (link) {
                     const href = String(link.getAttribute('href') || '');
