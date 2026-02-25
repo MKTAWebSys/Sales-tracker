@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/companies/{company}/quick-status', [CompanyController::class, 'quickStatus'])->name('companies.quick-status');
     Route::match(['get', 'post'], '/companies/{company}/quick-defer', [CompanyController::class, 'quickDefer'])->name('companies.quick-defer');
     Route::get('/companies-next/mine', [CompanyController::class, 'nextMine'])->name('companies.next-mine');
+    Route::post('/companies/bulk', [CompanyController::class, 'bulk'])->name('companies.bulk');
     Route::resource('calls', CallController::class)->only([
         'index',
         'create',

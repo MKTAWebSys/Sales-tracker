@@ -98,6 +98,7 @@ class CallController extends Controller
 
         $call = Call::create($data);
         $createdItems = $this->syncNextActions($call);
+        $this->syncFirstContactedAt($call);
         $this->syncCompanyStatus($call, $companyStatus);
 
         return redirect()
@@ -142,6 +143,7 @@ class CallController extends Controller
 
         $call->update($data);
         $createdItems = $this->syncNextActions($call);
+        $this->syncFirstContactedAt($call);
         $this->syncCompanyStatus($call, $companyStatus);
 
         $baseMessage = (string) $request->input('flow_mode') === 'finish'
@@ -278,5 +280,21 @@ class CallController extends Controller
         }
 
         $call->company()->update(['status' => $targetStatus]);
+    }
+
+    private function syncFirstContactedAt(Call $call): void
+    {
+        if ($call->outcome === 'pending') {
+            return;
+        }
+
+        $company = $call->company()->first(['id', 'first_contacted_at']);
+        if (! $company || $company->first_contacted_at) {
+            return;
+        }
+
+        $call->company()->update([
+            'first_contacted_at' => $call->called_at,
+        ]);
     }
 }

@@ -56,6 +56,11 @@ class User extends Authenticatable
         return $this->hasMany(Company::class, 'assigned_user_id');
     }
 
+    public function firstCallQueueCompanies(): HasMany
+    {
+        return $this->hasMany(Company::class, 'first_caller_user_id');
+    }
+
     public function callsMade(): HasMany
     {
         return $this->hasMany(Call::class, 'caller_id');
