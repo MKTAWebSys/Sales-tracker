@@ -96,8 +96,8 @@
                     @enderror
                 </div>
                 <div>
-                    <label for="outcome" class="block text-sm font-medium text-slate-700">Vysledek</label>
-                    <select id="outcome" name="outcome" class="js-call-outcome mt-1 w-full rounded-md border-slate-300">
+                    <label class="block text-sm font-medium text-slate-700">Vysledek</label>
+                    <select id="outcome" name="outcome" class="js-call-outcome sr-only">
                         @foreach (($isFinishFlow && $finalizeCall ? ['no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] : ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked']) as $outcome)
                             <option value="{{ $outcome }}" @selected(old('outcome', $finishOutcomeDefault) === $outcome)>
                                 @switch($outcome)
@@ -112,6 +112,38 @@
                             </option>
                         @endforeach
                     </select>
+                    @php
+                        $outcomeLabels = [
+                            'pending' => 'Rozpracovano',
+                            'no-answer' => 'Nezastizen',
+                            'callback' => 'Zavolat znovu',
+                            'interested' => 'Zajem',
+                            'not-interested' => 'Bez zajmu',
+                            'meeting-booked' => 'Schuzka domluvena',
+                        ];
+                    @endphp
+                    <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        @foreach (($isFinishFlow && $finalizeCall ? ['no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] : ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked']) as $outcome)
+                            @php
+                                $isSelectedOutcome = old('outcome', $finishOutcomeDefault) === $outcome;
+                                $chipTone = match ($outcome) {
+                                    'meeting-booked' => 'emerald',
+                                    'interested' => 'blue',
+                                    'callback', 'no-answer' => 'amber',
+                                    'not-interested' => 'rose',
+                                    default => 'slate',
+                                };
+                            @endphp
+                            <button
+                                type="button"
+                                class="js-call-outcome-chip rounded-xl border px-3 py-3 text-left text-sm font-medium transition {{ $isSelectedOutcome ? 'ring-2 ' : '' }} {{ $chipTone === 'emerald' ? ($isSelectedOutcome ? 'border-emerald-300 bg-emerald-50 text-emerald-900 ring-emerald-300' : 'border-slate-200 bg-white text-slate-800 hover:border-emerald-200 hover:bg-emerald-50/40') : '' }} {{ $chipTone === 'blue' ? ($isSelectedOutcome ? 'border-blue-300 bg-blue-50 text-blue-900 ring-blue-300' : 'border-slate-200 bg-white text-slate-800 hover:border-blue-200 hover:bg-blue-50/40') : '' }} {{ $chipTone === 'amber' ? ($isSelectedOutcome ? 'border-amber-300 bg-amber-50 text-amber-900 ring-amber-300' : 'border-slate-200 bg-white text-slate-800 hover:border-amber-200 hover:bg-amber-50/40') : '' }} {{ $chipTone === 'rose' ? ($isSelectedOutcome ? 'border-rose-300 bg-rose-50 text-rose-900 ring-rose-300' : 'border-slate-200 bg-white text-slate-800 hover:border-rose-200 hover:bg-rose-50/40') : '' }} {{ $chipTone === 'slate' ? ($isSelectedOutcome ? 'border-slate-300 bg-slate-100 text-slate-900 ring-slate-300' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50') : '' }}"
+                                data-outcome-value="{{ $outcome }}"
+                                aria-pressed="{{ $isSelectedOutcome ? 'true' : 'false' }}"
+                            >
+                                {{ $outcomeLabels[$outcome] ?? $outcome }}
+                            </button>
+                        @endforeach
+                    </div>
                     @error('outcome')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -259,6 +291,7 @@
             if (!form) return;
 
             const outcomeSelect = form.querySelector('.js-call-outcome');
+            const outcomeChips = Array.from(form.querySelectorAll('.js-call-outcome-chip'));
             const panels = Array.from(form.querySelectorAll('.js-call-panel'));
             const callbackPresetsWrap = form.querySelector('.js-callback-presets');
             const followUpInput = form.querySelector('#next_follow_up_at');
@@ -391,10 +424,33 @@
                 applySmartDefaults(outcome);
             };
 
+            const updateOutcomeChipState = function () {
+                if (!outcomeSelect || outcomeChips.length === 0) return;
+                const current = String(outcomeSelect.value || '');
+                outcomeChips.forEach((chip) => {
+                    const value = String(chip.getAttribute('data-outcome-value') || '');
+                    const active = value === current;
+                    chip.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    chip.classList.toggle('ring-2', active);
+                });
+            };
+
             if (outcomeSelect) {
                 outcomeSelect.addEventListener('change', updatePanels);
+                outcomeSelect.addEventListener('change', updateOutcomeChipState);
                 updatePanels();
+                updateOutcomeChipState();
             }
+
+            outcomeChips.forEach((chip) => {
+                chip.addEventListener('click', function () {
+                    if (!outcomeSelect) return;
+                    const value = String(chip.getAttribute('data-outcome-value') || '');
+                    if (!value) return;
+                    outcomeSelect.value = value;
+                    outcomeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            });
 
             presetButtons.forEach((button) => {
                 button.addEventListener('click', function () {

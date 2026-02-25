@@ -17,7 +17,7 @@
                 $cleanPhone = $company->phone ? preg_replace('/[^\d\+]/', '', $company->phone) : null;
             @endphp
 
-            <div class="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm ring-1 ring-emerald-100">
+            <div class="js-caller-swipe-card rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm ring-1 ring-emerald-100 transition will-change-transform" data-swipe-next-url="{{ route('companies.next-mine', ['current_company_id' => $company->id, 'skip_lost' => 1]) }}" data-swipe-defer-url="{{ route('companies.quick-defer', $company) }}">
                 <div class="mb-3 flex items-center justify-between gap-3">
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Moje dalsi firma</div>
@@ -84,12 +84,15 @@
                 </div>
 
                 <div class="mt-3 grid gap-2 sm:grid-cols-2">
-                    <a href="{{ route('companies.quick-defer', $company) }}" class="rounded-lg bg-amber-50 px-3 py-2 text-center text-sm font-medium text-amber-900 ring-1 ring-amber-200">
+                    <a href="{{ route('companies.quick-defer', $company) }}" class="js-caller-swipe-defer rounded-lg bg-amber-50 px-3 py-2 text-center text-sm font-medium text-amber-900 ring-1 ring-amber-200">
                         Odlozit + dalsi firma
                     </a>
-                    <a href="{{ route('companies.next-mine', ['current_company_id' => $company->id, 'skip_lost' => 1]) }}" class="rounded-lg bg-slate-100 px-3 py-2 text-center text-sm font-medium text-slate-700 ring-1 ring-slate-200">
+                    <a href="{{ route('companies.next-mine', ['current_company_id' => $company->id, 'skip_lost' => 1]) }}" class="js-caller-swipe-next rounded-lg bg-slate-100 px-3 py-2 text-center text-sm font-medium text-slate-700 ring-1 ring-slate-200">
                         Preskocit na dalsi
                     </a>
+                </div>
+                <div class="mt-3 text-center text-xs text-slate-500 sm:hidden">
+                    Swipe vlevo = dalsi firma, swipe vpravo = odlozit
                 </div>
             </div>
         @else
@@ -151,6 +154,72 @@
 
                 tick();
                 window.setInterval(tick, 1000);
+            });
+        </script>
+    @else
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const card = document.querySelector('.js-caller-swipe-card');
+                if (!card) return;
+
+                let startX = 0;
+                let startY = 0;
+                let dragging = false;
+                let currentDx = 0;
+                const threshold = 90;
+
+                const resetCard = function () {
+                    card.style.transition = 'transform 140ms ease';
+                    card.style.transform = 'translateX(0px)';
+                    window.setTimeout(function () {
+                        card.style.transition = '';
+                    }, 160);
+                };
+
+                card.addEventListener('touchstart', function (event) {
+                    const touch = event.touches[0];
+                    if (!touch) return;
+                    if (event.target.closest('a, button, input, textarea, select, form')) return;
+                    startX = touch.clientX;
+                    startY = touch.clientY;
+                    dragging = true;
+                    currentDx = 0;
+                }, { passive: true });
+
+                card.addEventListener('touchmove', function (event) {
+                    if (!dragging) return;
+                    const touch = event.touches[0];
+                    if (!touch) return;
+                    const dx = touch.clientX - startX;
+                    const dy = touch.clientY - startY;
+                    if (Math.abs(dy) > Math.abs(dx)) return;
+                    currentDx = dx;
+                    card.style.transform = 'translateX(' + Math.max(-120, Math.min(120, dx)) + 'px)';
+                }, { passive: true });
+
+                card.addEventListener('touchend', function () {
+                    if (!dragging) return;
+                    dragging = false;
+
+                    if (currentDx <= -threshold) {
+                        const url = card.getAttribute('data-swipe-next-url');
+                        if (url) window.location.href = url;
+                        return;
+                    }
+
+                    if (currentDx >= threshold) {
+                        const url = card.getAttribute('data-swipe-defer-url');
+                        if (url) window.location.href = url;
+                        return;
+                    }
+
+                    resetCard();
+                });
+
+                card.addEventListener('touchcancel', function () {
+                    dragging = false;
+                    resetCard();
+                });
             });
         </script>
     @endif

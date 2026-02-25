@@ -171,6 +171,37 @@
     @endif
 
     <script>
+        window.crmSuccessFeedback = function () {
+            try {
+                if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+                    navigator.vibrate([18, 24, 18]);
+                }
+            } catch (error) {
+            }
+
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 880;
+                gain.gain.value = 0.0001;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                const now = ctx.currentTime;
+                gain.gain.exponentialRampToValueAtTime(0.02, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+                osc.start(now);
+                osc.stop(now + 0.1);
+                window.setTimeout(function () {
+                    ctx.close().catch?.(() => {});
+                }, 120);
+            } catch (error) {
+            }
+        };
+
         document.addEventListener('click', function (event) {
             const target = event.target instanceof Element ? event.target : event.target?.parentElement;
             if (!target) return;
@@ -310,6 +341,9 @@
 
                             if (quickNoteStatus) {
                                 quickNoteStatus.textContent = 'Poznamka ulozena';
+                                if (typeof window.crmSuccessFeedback === 'function') {
+                                    window.crmSuccessFeedback();
+                                }
                                 window.clearTimeout(quickNoteStatusTimer);
                                 quickNoteStatusTimer = window.setTimeout(function () {
                                     quickNoteStatus.textContent = '';
@@ -345,6 +379,14 @@
                     });
                 });
             });
+        @endif
+
+        @if (session('status'))
+            window.setTimeout(function () {
+                if (typeof window.crmSuccessFeedback === 'function') {
+                    window.crmSuccessFeedback();
+                }
+            }, 80);
         @endif
 
         window.setTimeout(function () {
