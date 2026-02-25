@@ -20,21 +20,19 @@
 @extends('layouts.crm', ['title' => $titleText . ' | Call CRM'])
 
 @section('content')
-    <div class="mb-6">
-        <h1 class="text-2xl font-semibold">{{ $titleText }}</h1>
-        @if ($isFinishFlow)
-            <p class="text-sm text-slate-600">
-                @if ($isActiveNoteOnlyFinish)
+    @if (! ($isFinishFlow && $finalizeCall))
+        <div class="mb-6">
+            <h1 class="text-2xl font-semibold">{{ $titleText }}</h1>
+            @if ($isFinishFlow)
+                <p class="text-sm text-slate-600">
                     Aktivni hovor: zatim zapisuj jen poznamku. Vysledek a dalsi kroky vyberes az pri ukonceni hovoru.
-                @else
-                    Dopln vysledek hovoru a zobrazime jen relevantni dalsi kroky.
-                @endif
-            </p>
-        @else
-            <p class="text-sm text-slate-600">Zaznam hovoru s poli pro navazujici kroky.</p>
-            <p class="mt-1 text-xs text-slate-500">Pokud vyplnis follow-up / schuzku / predani, navazane zaznamy se po ulozeni vytvori automaticky.</p>
-        @endif
-    </div>
+                </p>
+            @else
+                <p class="text-sm text-slate-600">Zaznam hovoru s poli pro navazujici kroky.</p>
+                <p class="mt-1 text-xs text-slate-500">Pokud vyplnis follow-up / schuzku / predani, navazane zaznamy se po ulozeni vytvori automaticky.</p>
+            @endif
+        </div>
+    @endif
 
     <form method="POST" action="{{ $call->exists ? route('calls.update', $call) : route('calls.store') }}" class="js-call-flow-form {{ $isActiveNoteOnlyFinish ? 'space-y-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6 pb-28 sm:pb-6' : 'space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200' }}">
         @csrf
