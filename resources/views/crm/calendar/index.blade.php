@@ -34,18 +34,19 @@
     </div>
 
     <form method="GET" action="{{ route('calendar.index') }}" class="mb-6 grid gap-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 md:grid-cols-6">
-        <div>
-            <label for="date" class="block text-sm font-medium text-slate-700">Datum</label>
-            <input id="date" name="date" type="date" value="{{ $calendarDate->format('Y-m-d') }}" class="mt-1 w-full rounded-md border-slate-300">
-        </div>
+        <input type="hidden" name="date" value="{{ $calendarDate->format('Y-m-d') }}">
+        <input type="hidden" name="view" value="{{ $viewMode }}">
 
-        <div>
-            <label for="view" class="block text-sm font-medium text-slate-700">Zobrazeni</label>
-            <select id="view" name="view" class="mt-1 w-full rounded-md border-slate-300">
-                <option value="day" @selected($viewMode === 'day')>Den</option>
-                <option value="week" @selected($viewMode === 'week')>Tyden</option>
-                <option value="month" @selected($viewMode === 'month')>Mesic</option>
-            </select>
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-slate-700">Zobrazeni</label>
+            <div class="mt-1 inline-flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
+                @foreach (['day' => 'Den', 'week' => 'Tyden', 'month' => 'Mesic'] as $modeValue => $modeLabel)
+                    <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['view' => $modeValue, 'date' => $calendarDate->format('Y-m-d')])) }}"
+                       class="rounded-md px-3 py-2 text-sm font-medium transition {{ $viewMode === $modeValue ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900' }}">
+                        {{ $modeLabel }}
+                    </a>
+                @endforeach
+            </div>
         </div>
 
         @if ($isManager)
