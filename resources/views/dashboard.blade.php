@@ -1,25 +1,216 @@
-@extends('layouts.crm', ['title' => 'Dashboard | Call CRM'])
+@php
+    $today = now()->toDateString();
+    $yesterday = now()->subDay()->toDateString();
+    $viewedUserId = $viewedUser?->id;
+    $isManagerView = auth()->user()?->isManager();
+    $targetCount = $viewedUser?->call_target_count;
+    $targetUntil = $viewedUser?->call_target_until;
+    $targetRemaining = $targetCount ? max($targetCount - (int) ($myStats['companies'] ?? 0), 0) : null;
+    $userFilterParams = $viewedUserId ? ['assigned_user_id' => $viewedUserId, 'mine' => 0] : [];
+    $myCompaniesParams = ($isManagerView && $viewedUserId && auth()->id() !== $viewedUserId)
+        ? ['assigned_user_id' => $viewedUserId, 'mine' => 0]
+        : ['mine' => 1];
+    $myFollowUpsOpenParams = ($isManagerView && $viewedUserId && auth()->id() !== $viewedUserId)
+        ? ['assigned_user_id' => $viewedUserId, 'mine' => 0, 'status' => 'open']
+        : ['mine' => 1, 'status' => 'open'];
+    $myFollowUpsOverdueParams = ($isManagerView && $viewedUserId && auth()->id() !== $viewedUserId)
+        ? ['assigned_user_id' => $viewedUserId, 'mine' => 0, 'status' => 'open', 'due_to' => $yesterday]
+        : ['mine' => 1, 'status' => 'open', 'due_to' => $yesterday];
+@endphp
+
+@extends('layouts.crm', ['title' => 'Prehled | Call CRM'])
 
 @section('content')
     <div class="mb-8">
-        <h1 class="text-2xl font-semibold">Dashboard</h1>
-        <p class="mt-1 text-sm text-slate-600">Přehled MVP metrik.</p>
+        <h1 class="text-2xl font-semibold">Prehled</h1>
+        <p class="mt-1 text-sm text-slate-600">Prehled MVP metrik a priorit follow-upu.</p>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-xs text-slate-500">Firmy</p><p class="mt-2 text-2xl font-semibold">{{ $stats['companies'] }}</p></div>
-        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-xs text-slate-500">Hovory</p><p class="mt-2 text-2xl font-semibold">{{ $stats['calls'] }}</p></div>
-        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-xs text-slate-500">Open follow-upy</p><p class="mt-2 text-2xl font-semibold">{{ $stats['followUpsOpen'] }}</p></div>
-        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-xs text-slate-500">Předání leadů</p><p class="mt-2 text-2xl font-semibold">{{ $stats['leadTransfers'] }}</p></div>
-        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-xs text-slate-500">Plánované schůzky</p><p class="mt-2 text-2xl font-semibold">{{ $stats['meetingsPlanned'] }}</p></div>
+    @if (auth()->user()?->isManager())
+        <div class="mb-6 rounded-xl p-4 shadow-sm ring-1 {{ $isViewingOtherUser ? 'bg-amber-50 ring-amber-200' : 'bg-white ring-slate-200' }}">
+            <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-end gap-3">
+                <div class="min-w-64">
+                    <label for="user_view_id" class="block text-sm font-medium {{ $isViewingOtherUser ? 'text-amber-900' : 'text-slate-700' }}">
+                        Pohled uzivatele
+                    </label>
+                    <select id="user_view_id" name="user_view_id" class="mt-1 w-full rounded-md border-slate-300 {{ $isViewingOtherUser ? 'bg-amber-100/60 border-amber-300' : '' }}">
+                        @foreach ($dashboardUsers as $userOption)
+                            <option value="{{ $userOption->id }}" @selected($viewedUserId === $userOption->id)>{{ $userOption->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Prepnout pohled</button>
+                @if ($isViewingOtherUser)
+                    <a href="{{ route('dashboard') }}" class="rounded-md bg-amber-100 px-4 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-300">Zpet na muj pohled</a>
+                    <span class="text-sm text-amber-900">Koukate na dashboard uzivatele: <span class="font-semibold">{{ $viewedUser?->name }}</span></span>
+                @endif
+            </form>
+
+            @if ($viewedUser)
+                <form method="POST" action="{{ route('dashboard.user-target.update', $viewedUser) }}" class="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-white/70 p-3 md:grid-cols-4">
+                    @csrf
+                    <div>
+                        <label for="call_target_count" class="block text-xs font-medium text-slate-700">Cil firem k obvolani</label>
+                        <input id="call_target_count" name="call_target_count" type="number" min="1" value="{{ old('call_target_count', $viewedUser->call_target_count) }}" class="mt-1 w-full rounded-md border-slate-300 text-sm">
+                    </div>
+                    <div>
+                        <label for="call_target_until" class="block text-xs font-medium text-slate-700">Termin do</label>
+                        <input id="call_target_until" name="call_target_until" type="date" value="{{ old('call_target_until', $viewedUser->call_target_until?->format('Y-m-d')) }}" class="mt-1 w-full rounded-md border-slate-300 text-sm">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Ulozit cil</button>
+                        <button type="submit" name="clear_target" value="1" class="rounded-md bg-slate-200 px-3 py-2 text-sm font-medium text-slate-700">Smazat</button>
+                    </div>
+                    <div class="flex items-center text-xs {{ $isViewingOtherUser ? 'text-amber-900' : 'text-slate-600' }}">
+                        Admin nastaveni cile pro zvoleneho uzivatele.
+                    </div>
+                </form>
+            @endif
+        </div>
+    @endif
+
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-7">
+        <a href="{{ route('companies.index') }}" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50">
+            <p class="text-xs text-slate-500">Firmy</p>
+            <p class="mt-2 text-2xl font-semibold">{{ $stats['companies'] }}</p>
+        </a>
+        <a href="{{ route('calls.index') }}" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50">
+            <p class="text-xs text-slate-500">Hovory</p>
+            <p class="mt-2 text-2xl font-semibold">{{ $stats['calls'] }}</p>
+        </a>
+        <a href="{{ route('follow-ups.index', ['mine' => 0, 'status' => 'open']) }}" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50">
+            <p class="text-xs text-slate-500">Otevrene follow-upy (globalne)</p>
+            <p class="mt-2 text-2xl font-semibold">{{ $stats['followUpsOpen'] }}</p>
+        </a>
+        <a href="{{ route('follow-ups.index', ['mine' => 0, 'status' => 'open', 'due_from' => $today, 'due_to' => $today]) }}" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-amber-200 transition hover:bg-amber-50/40">
+            <p class="text-xs text-amber-700">Na dnes (globalne)</p>
+            <p class="mt-2 text-2xl font-semibold text-amber-800">{{ $stats['followUpsDueToday'] }}</p>
+        </a>
+        <a href="{{ route('follow-ups.index', ['mine' => 0, 'status' => 'open', 'due_to' => $yesterday]) }}" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-rose-200 transition hover:bg-rose-50/40">
+            <p class="text-xs text-rose-700">Po terminu (globalne)</p>
+            <p class="mt-2 text-2xl font-semibold text-rose-800">{{ $stats['followUpsOverdue'] }}</p>
+        </a>
+        <a href="{{ route('lead-transfers.index') }}" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50">
+            <p class="text-xs text-slate-500">Predani leadu</p>
+            <p class="mt-2 text-2xl font-semibold">{{ $stats['leadTransfers'] }}</p>
+        </a>
+        <a href="{{ route('meetings.index', ['status' => 'planned']) }}" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50">
+            <p class="text-xs text-slate-500">Planovane schuzky</p>
+            <p class="mt-2 text-2xl font-semibold">{{ $stats['meetingsPlanned'] }}</p>
+        </a>
+    </div>
+
+    <div class="mt-8 grid gap-6 lg:grid-cols-2">
+        <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <h2 class="text-lg font-semibold">{{ $isViewingOtherUser ? 'Fronta uzivatele: '.$viewedUser?->name : 'Moje fronta' }}</h2>
+            @if ($targetCount || $targetUntil)
+                <div class="mt-3 rounded-lg border {{ $isViewingOtherUser ? 'border-amber-200 bg-amber-50/60' : 'border-blue-200 bg-blue-50/60' }} p-3 text-sm">
+                    <div class="font-medium">
+                        Cil obvolani:
+                        <span>{{ $targetCount ? $targetCount.' firem' : 'neuvedeno' }}</span>
+                        @if ($targetUntil)
+                            <span>do {{ $targetUntil->format('Y-m-d') }}</span>
+                        @endif
+                    </div>
+                    <div class="mt-1 text-xs text-slate-700">
+                        Aktualne ve fronte: {{ $myStats['companies'] ?? 0 }}
+                        @if (!is_null($targetRemaining))
+                            | Zbyva k naplneni cile: {{ $targetRemaining }}
+                        @endif
+                    </div>
+                </div>
+            @endif
+            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                <a href="{{ route('companies.index', $myCompaniesParams) }}" class="rounded-lg border border-slate-200 p-3 transition hover:bg-slate-50">
+                    <div class="text-xs text-slate-500">{{ $isViewingOtherUser ? 'Firmy uzivatele' : 'Moje firmy' }}</div>
+                    <div class="mt-1 text-xl font-semibold">{{ $myStats['companies'] ?? 0 }}</div>
+                    @if ($targetCount || $targetUntil)
+                        <div class="mt-1 text-[11px] text-slate-500">
+                            {{ $targetCount ? 'cil '.$targetCount : 'cil ?' }}@if($targetUntil) · do {{ $targetUntil->format('Y-m-d') }}@endif
+                        </div>
+                    @endif
+                </a>
+                <a href="{{ route('follow-ups.index', $myFollowUpsOpenParams) }}" class="rounded-lg border border-slate-200 p-3 transition hover:bg-slate-50">
+                    <div class="text-xs text-slate-500">{{ $isViewingOtherUser ? 'Otevrene follow-upy uzivatele' : 'Moje otevrene follow-upy' }}</div>
+                    <div class="mt-1 text-xl font-semibold">{{ $myStats['followUpsOpen'] ?? 0 }}</div>
+                </a>
+                <a href="{{ route('follow-ups.index', $myFollowUpsOverdueParams) }}" class="rounded-lg border border-rose-200 p-3 transition hover:bg-rose-50/40">
+                    <div class="text-xs text-rose-700">{{ $isViewingOtherUser ? 'Po terminu (uzivatel)' : 'Moje po terminu' }}</div>
+                    <div class="mt-1 text-xl font-semibold text-rose-800">{{ $myStats['followUpsOverdue'] ?? 0 }}</div>
+                </a>
+            </div>
+
+            <div class="mt-4 flex items-center gap-3 text-sm">
+                <a href="{{ route('companies.index', $myCompaniesParams) }}" class="text-slate-700 underline">{{ $isViewingOtherUser ? 'Firmy uzivatele' : 'Moje firmy' }}</a>
+                <a href="{{ route('follow-ups.index', $myFollowUpsOpenParams) }}" class="text-slate-700 underline">{{ $isViewingOtherUser ? 'Otevrene follow-upy uzivatele' : 'Moje otevrene follow-upy' }}</a>
+            </div>
+
+            <ul class="mt-4 space-y-3 text-sm">
+                @forelse ($myFollowUpsList as $followUp)
+                    <li class="rounded-lg border border-slate-100 p-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="font-medium">{{ $followUp->company?->name ?? '-' }}</div>
+                            <a href="{{ route('follow-ups.show', $followUp) }}" class="text-xs text-slate-600 hover:text-slate-900">Detail</a>
+                        </div>
+                        <div class="mt-1 text-slate-500">{{ $followUp->due_at?->format('Y-m-d H:i') ?: '-' }}</div>
+                    </li>
+                @empty
+                    <li class="text-slate-500">{{ $isViewingOtherUser ? 'Vybrany uzivatel nema zadne otevrene follow-upy.' : 'Nemate zadne otevrene follow-upy.' }}</li>
+                @endforelse
+            </ul>
+        </div>
+
+        <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <div class="flex items-center justify-between gap-3">
+                <h2 class="text-lg font-semibold">{{ $isViewingOtherUser ? 'Follow-upy dnes (uzivatel)' : 'Follow-upy dnes' }}</h2>
+                <a href="{{ route('follow-ups.index', array_merge($userFilterParams, ['status' => 'open', 'due_from' => $today, 'due_to' => $today])) }}" class="text-sm text-slate-600 hover:text-slate-900">Otevrit filtr</a>
+            </div>
+
+            <ul class="mt-4 space-y-3 text-sm">
+                @forelse ($followUpsDueTodayList as $followUp)
+                    <li class="rounded-lg border border-slate-100 p-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="font-medium">{{ $followUp->company?->name ?? '-' }}</div>
+                            <a href="{{ route('follow-ups.show', $followUp) }}" class="text-xs text-slate-600 hover:text-slate-900">Detail</a>
+                        </div>
+                        <div class="mt-1 text-slate-500">{{ $followUp->due_at?->format('Y-m-d H:i') ?: '-' }}</div>
+                        <div class="mt-1 text-xs text-slate-500">{{ $followUp->assignedUser?->name ? 'Prirazeno: '.$followUp->assignedUser->name : 'Neprirazeno' }}</div>
+                    </li>
+                @empty
+                    <li class="text-slate-500">{{ $isViewingOtherUser ? 'Nic na dnes pro vybraneho uzivatele.' : 'Nic na dnesek.' }}</li>
+                @endforelse
+            </ul>
+        </div>
+
+        <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <div class="flex items-center justify-between gap-3">
+                <h2 class="text-lg font-semibold">{{ $isViewingOtherUser ? 'Po terminu (uzivatel)' : 'Po terminu' }}</h2>
+                <a href="{{ route('follow-ups.index', array_merge($userFilterParams, ['status' => 'open', 'due_to' => $yesterday])) }}" class="text-sm text-slate-600 hover:text-slate-900">Otevrit filtr</a>
+            </div>
+
+            <ul class="mt-4 space-y-3 text-sm">
+                @forelse ($followUpsOverdueList as $followUp)
+                    <li class="rounded-lg border border-rose-100 bg-rose-50/30 p-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="font-medium">{{ $followUp->company?->name ?? '-' }}</div>
+                            <a href="{{ route('follow-ups.show', $followUp) }}" class="text-xs text-slate-600 hover:text-slate-900">Detail</a>
+                        </div>
+                        <div class="mt-1 text-rose-700">{{ $followUp->due_at?->format('Y-m-d H:i') ?: '-' }}</div>
+                        <div class="mt-1 text-xs text-slate-500">{{ $followUp->assignedUser?->name ? 'Prirazeno: '.$followUp->assignedUser->name : 'Neprirazeno' }}</div>
+                    </li>
+                @empty
+                    <li class="text-slate-500">{{ $isViewingOtherUser ? 'Nic po terminu pro vybraneho uzivatele.' : 'Nic po terminu.' }}</li>
+                @endforelse
+            </ul>
+        </div>
     </div>
 
     <div class="mt-8 rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <h2 class="text-lg font-semibold">MVP další kroky</h2>
+        <h2 class="text-lg font-semibold">Dalsi MVP kroky</h2>
         <ul class="mt-3 space-y-2 text-sm text-slate-700">
-            <li>Doinstalovat Laravel Breeze (`php artisan breeze:install blade`)</li>
-            <li>Napojit CRUD formuláře pro moduly</li>
-            <li>Doplnit role/oprávnění a notifikace follow-upů</li>
+            <li>Doladit filtry a hromadne workflow pro follow-upy a predani leadu</li>
+            <li>Doplnit mazani s potvrzenim</li>
+            <li>Rozsirit testy pro CRM moduly</li>
         </ul>
     </div>
 @endsection

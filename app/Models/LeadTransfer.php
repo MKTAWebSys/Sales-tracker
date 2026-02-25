@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LeadTransfer extends Model
 {
@@ -24,5 +25,25 @@ class LeadTransfer extends Model
         return [
             'transferred_at' => 'datetime',
         ];
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function call(): BelongsTo
+    {
+        return $this->belongsTo(Call::class);
+    }
+
+    public function fromUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'from_user_id');
+    }
+
+    public function toUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'to_user_id');
     }
 }
