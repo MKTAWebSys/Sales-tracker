@@ -21,7 +21,13 @@ class CalendarController extends Controller
         $viewMode = in_array((string) $request->input('view', 'week'), ['day', 'week', 'month'], true)
             ? (string) $request->input('view', 'week')
             : 'week';
+        $selectedAgendaUserId = $isManager && $request->filled('assigned_user_id')
+            ? (int) $request->integer('assigned_user_id')
+            : null;
         $mine = $isManager ? (string) $request->input('mine', '1') : '1';
+        if ($selectedAgendaUserId) {
+            $mine = '0';
+        }
         $overdueOnly = $request->boolean('overdue_only');
 
         [$rangeStart, $rangeEnd] = $this->resolveRange($date, $viewMode);
@@ -83,7 +89,7 @@ class CalendarController extends Controller
             'isManager' => $isManager,
             'filters' => [
                 'mine' => $mine,
-                'assigned_user_id' => (string) $request->input('assigned_user_id', ''),
+                'assigned_user_id' => (string) ($selectedAgendaUserId ?: ''),
                 'view' => $viewMode,
                 'overdue_only' => $overdueOnly,
             ],
@@ -107,19 +113,6 @@ class CalendarController extends Controller
 
     private function applyAgendaFilters($followUpsQuery, $meetingsQuery, Request $request, $user, bool $isManager, string $mine): void
     {
-        if ($mine === '1' && $user) {
-            $followUpsQuery->where('assigned_user_id', $user->id);
-            $meetingsQuery->whereHas('company', function ($query) use ($user) {
-                $query->where(function ($subQuery) use ($user) {
-                    $subQuery
-                        ->where('assigned_user_id', $user->id)
-                        ->orWhere('first_caller_user_id', $user->id);
-                });
-            });
-
-            return;
-        }
-
         if ($isManager && $request->filled('assigned_user_id')) {
             $assignedUserId = $request->integer('assigned_user_id');
             $followUpsQuery->where('assigned_user_id', $assignedUserId);
@@ -130,6 +123,20 @@ class CalendarController extends Controller
                         ->orWhere('first_caller_user_id', $assignedUserId);
                 });
             });
+
+            return;
+        }
+
+        if ($mine === '1' && $user) {
+            $followUpsQuery->where('assigned_user_id', $user->id);
+            $meetingsQuery->whereHas('company', function ($query) use ($user) {
+                $query->where(function ($subQuery) use ($user) {
+                    $subQuery
+                        ->where('assigned_user_id', $user->id)
+                        ->orWhere('first_caller_user_id', $user->id);
+                });
+            });
+            return;
         }
     }
 

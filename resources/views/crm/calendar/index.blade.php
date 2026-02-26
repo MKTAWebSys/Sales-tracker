@@ -21,6 +21,10 @@
         $dayHeaders = ['Po', 'Ut', 'St', 'Ct', 'Pa', 'So', 'Ne'];
     @endphp
 
+    @php
+        $calendarAssignedUserSelected = $isManager && filled($filters['assigned_user_id'] ?? '');
+    @endphp
+
     <form id="calendar-filter-form" method="GET" action="{{ route('calendar.index') }}" class="mb-4">
     <input type="hidden" name="date" value="{{ $calendarDate->format('Y-m-d') }}">
     <input type="hidden" name="view" value="{{ $viewMode }}">
@@ -62,8 +66,8 @@
                 <input type="hidden" name="mine" value="1">
             @endif
 
-            <label class="inline-flex h-8 items-center gap-1.5 text-sm text-slate-700 whitespace-nowrap">
-                <input type="checkbox" name="mine" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-4 w-4 rounded border-slate-300" @checked(($filters['mine'] ?? '1') === '1')>
+            <label class="inline-flex h-8 items-center gap-1.5 text-sm {{ $calendarAssignedUserSelected ? 'text-slate-400' : 'text-slate-700' }} whitespace-nowrap">
+                <input type="checkbox" name="mine" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-4 w-4 rounded border-slate-300" @checked(! $calendarAssignedUserSelected && ($filters['mine'] ?? '1') === '1') @disabled($calendarAssignedUserSelected)>
                 <span>Jen moje agenda</span>
             </label>
             <label class="inline-flex h-8 items-center gap-1.5 text-sm text-slate-700 whitespace-nowrap">
