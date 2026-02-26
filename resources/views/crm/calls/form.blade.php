@@ -28,19 +28,19 @@
                 ? $startAt->diffInMinutes($endAt)
                 : null;
         @endphp
-        <div class="mb-4 rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 p-4 text-white shadow-sm">
+        <div class="mb-3 rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 p-3 text-white shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">Hovor ukoncen</div>
-                    <div class="mt-1 text-lg font-semibold text-white/95">{{ $company?->name ?? 'Bez firmy' }}</div>
+                    <div class="mt-0.5 text-base font-semibold text-white/95">{{ $company?->name ?? 'Bez firmy' }}</div>
                 </div>
                 <div class="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold tabular-nums text-white ring-1 ring-white/10">
                     {{ $durationMinutes !== null ? $durationMinutes.' min' : '-' }}
                 </div>
             </div>
-            <div class="mt-3 grid gap-2 text-xs text-slate-300 sm:grid-cols-2">
-                <div class="rounded-lg bg-white/5 px-3 py-2 ring-1 ring-white/10">Od: {{ $startAt?->format('Y-m-d H:i:s') ?? '-' }}</div>
-                <div class="rounded-lg bg-white/5 px-3 py-2 ring-1 ring-white/10">Do: {{ $endAt?->format('Y-m-d H:i:s') ?? '-' }}</div>
+            <div class="mt-2 grid gap-2 text-xs text-slate-300 sm:grid-cols-2">
+                <div class="rounded-lg bg-white/5 px-3 py-1.5 ring-1 ring-white/10">Od: {{ $startAt?->format('Y-m-d H:i:s') ?? '-' }}</div>
+                <div class="rounded-lg bg-white/5 px-3 py-1.5 ring-1 ring-white/10">Do: {{ $endAt?->format('Y-m-d H:i:s') ?? '-' }}</div>
             </div>
         </div>
     @endif
@@ -122,7 +122,7 @@
             </div>
             @endif
 
-            <div class="{{ $isFinishFlow && $finalizeCall ? 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-200 lg:grid lg:grid-cols-[minmax(0,42%)_minmax(0,58%)] lg:gap-5' : 'grid gap-6 sm:grid-cols-2' }}">
+            <div class="{{ $isFinishFlow && $finalizeCall ? 'rounded-xl border border-slate-200 bg-white p-3 shadow-sm ring-1 ring-slate-200 lg:grid lg:grid-cols-[minmax(0,40%)_minmax(0,60%)] lg:gap-4' : 'grid gap-6 sm:grid-cols-2' }}">
                 @if (! ($isFinishFlow && $finalizeCall))
                     <div>
                         <label for="called_at" class="block text-sm font-medium text-slate-700">{{ $isFinishFlow ? 'Cas startu hovoru' : 'Datum a cas hovoru' }}</label>
@@ -159,7 +159,7 @@
                             'meeting-booked' => 'Schuzka domluvena',
                         ];
                     @endphp
-                    <div class="mt-2 grid grid-cols-1 gap-2 {{ $isFinishFlow && $finalizeCall ? 'max-w-[28rem]' : 'sm:grid-cols-2' }}">
+                    <div class="mt-1.5 grid grid-cols-1 gap-1.5 {{ $isFinishFlow && $finalizeCall ? 'max-w-[25rem]' : 'sm:grid-cols-2' }}">
                         @foreach (($isFinishFlow && $finalizeCall ? ['no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] : ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked']) as $outcome)
                             @php
                                 $isSelectedOutcome = old('outcome', $finishOutcomeDefault) === $outcome;
@@ -173,7 +173,7 @@
                             @endphp
                             <button
                                 type="button"
-                                class="js-call-outcome-chip rounded-xl border text-sm font-medium transition {{ $isFinishFlow && $finalizeCall ? 'px-3 py-1.5 text-center' : 'px-3 py-3 text-left' }} {{ $isSelectedOutcome ? 'ring-2 ' : '' }} {{ $chipTone === 'emerald' ? ($isSelectedOutcome ? 'border-emerald-300 bg-emerald-100 text-emerald-900 ring-emerald-300' : ($isFinishFlow && $finalizeCall ? 'border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'blue' ? ($isSelectedOutcome ? 'border-blue-300 bg-blue-100 text-blue-900 ring-blue-300' : ($isFinishFlow && $finalizeCall ? 'border-blue-200 bg-blue-50 text-blue-900 hover:bg-blue-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'amber' ? ($isSelectedOutcome ? 'border-amber-300 bg-amber-100 text-amber-900 ring-amber-300' : ($isFinishFlow && $finalizeCall ? 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'rose' ? ($isSelectedOutcome ? 'border-rose-300 bg-rose-100 text-rose-900 ring-rose-300' : ($isFinishFlow && $finalizeCall ? 'border-rose-200 bg-rose-50 text-rose-900 hover:bg-rose-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'slate' ? ($isSelectedOutcome ? 'border-slate-300 bg-slate-200 text-slate-900 ring-slate-300' : ($isFinishFlow && $finalizeCall ? 'border-slate-200 bg-slate-100 text-slate-900 hover:bg-slate-200' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }}"
+                                class="js-call-outcome-chip rounded-xl border text-sm font-medium transition {{ $isFinishFlow && $finalizeCall ? 'px-3 py-1 text-center' : 'px-3 py-3 text-left' }} {{ $isSelectedOutcome ? 'ring-2 ' : '' }} {{ $chipTone === 'emerald' ? ($isSelectedOutcome ? 'border-emerald-300 bg-emerald-100 text-emerald-900 ring-emerald-300' : ($isFinishFlow && $finalizeCall ? 'border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'blue' ? ($isSelectedOutcome ? 'border-blue-300 bg-blue-100 text-blue-900 ring-blue-300' : ($isFinishFlow && $finalizeCall ? 'border-blue-200 bg-blue-50 text-blue-900 hover:bg-blue-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'amber' ? ($isSelectedOutcome ? 'border-amber-300 bg-amber-100 text-amber-900 ring-amber-300' : ($isFinishFlow && $finalizeCall ? 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'rose' ? ($isSelectedOutcome ? 'border-rose-300 bg-rose-100 text-rose-900 ring-rose-300' : ($isFinishFlow && $finalizeCall ? 'border-rose-200 bg-rose-50 text-rose-900 hover:bg-rose-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'slate' ? ($isSelectedOutcome ? 'border-slate-300 bg-slate-200 text-slate-900 ring-slate-300' : ($isFinishFlow && $finalizeCall ? 'border-slate-200 bg-slate-100 text-slate-900 hover:bg-slate-200' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }}"
                                 data-outcome-value="{{ $outcome }}"
                                 aria-pressed="{{ $isSelectedOutcome ? 'true' : 'false' }}"
                             >
@@ -187,9 +187,9 @@
                 </div>
 
                 @if ($isFinishFlow && $finalizeCall)
-                    <div class="mt-4 lg:mt-0">
+                    <div class="mt-3 lg:mt-0">
                         <label for="summary" class="block text-sm font-medium text-slate-700">Poznamka / shrnuti hovoru</label>
-                        <textarea id="summary" name="summary" rows="5" class="mt-1 w-full rounded-md border-slate-300" autofocus>{{ old('summary', $call->summary) }}</textarea>
+                        <textarea id="summary" name="summary" rows="4" class="mt-1 w-full rounded-md border-slate-300" autofocus>{{ old('summary', $call->summary) }}</textarea>
                         <p class="mt-1 text-xs text-slate-500">Poznamku muzes psat prubezne behem hovoru. Dalsi kroky se jen prizpusobi podle vysledku.</p>
                         @error('summary')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
