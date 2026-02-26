@@ -62,23 +62,25 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ $call->exists ? route('calls.update', $call) : route('calls.store') }}" class="js-call-flow-form {{ $isActiveNoteOnlyFinish ? 'space-y-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6 pb-28 sm:pb-6' : 'space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200' }}">
+    <form method="POST" action="{{ $call->exists ? route('calls.update', $call) : route('calls.store') }}" class="js-call-flow-form {{ $isActiveNoteOnlyFinish ? 'space-y-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6 pb-28 sm:pb-6' : ($isFinishFlow && $finalizeCall ? 'space-y-4 rounded-xl bg-white px-6 pb-6 pt-3 shadow-sm ring-1 ring-slate-200' : 'space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200') }}">
         @csrf
         @if ($call->exists)
             @method('PUT')
         @endif
-        <input type="hidden" name="flow_mode" value="{{ $flowMode }}">
-        @if ($isFinishFlow && $finalizeCall)
-            <input type="hidden" name="finalize_call" value="1">
-        @endif
-        @if ($isCallerMode)
-            <input type="hidden" name="caller_mode" value="1">
-        @endif
-        @if ($isFinishFlow && $finalizeCall)
-            <input type="hidden" name="ended_at" value="{{ old('ended_at', optional($call->ended_at)->format('Y-m-d\\TH:i:s')) }}">
-            <input type="hidden" name="company_id" value="{{ old('company_id', $call->company_id) }}">
-            <input type="hidden" name="called_at" value="{{ old('called_at', optional($call->called_at)->format('Y-m-d\\TH:i:s')) }}">
-        @endif
+        <div hidden>
+            <input type="hidden" name="flow_mode" value="{{ $flowMode }}">
+            @if ($isFinishFlow && $finalizeCall)
+                <input type="hidden" name="finalize_call" value="1">
+            @endif
+            @if ($isCallerMode)
+                <input type="hidden" name="caller_mode" value="1">
+            @endif
+            @if ($isFinishFlow && $finalizeCall)
+                <input type="hidden" name="ended_at" value="{{ old('ended_at', optional($call->ended_at)->format('Y-m-d\\TH:i:s')) }}">
+                <input type="hidden" name="company_id" value="{{ old('company_id', $call->company_id) }}">
+                <input type="hidden" name="called_at" value="{{ old('called_at', optional($call->called_at)->format('Y-m-d\\TH:i:s')) }}">
+            @endif
+        </div>
 
         @if ($isFinishFlow && $finalizeCall)
             @error('ended_at')
