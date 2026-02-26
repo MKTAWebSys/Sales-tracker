@@ -44,7 +44,7 @@
                         <path d="M12.5 4.5 7 10l5.5 5.5" />
                     </svg>
                 </a>
-                <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $todayDate])) }}" class="rounded-md {{ $isToday ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700' }} px-3 py-1.5 font-medium">Dnes</a>
+                    <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $todayDate])) }}" class="inline-flex h-9 items-center rounded-md {{ $isToday ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700' }} px-3 font-medium">Dnes</a>
                 <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $nextDate])) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Dalsi" aria-label="Dalsi">
                     <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M7.5 4.5 13 10l-5.5 5.5" />
@@ -69,7 +69,7 @@
                     @if ($isManager)
                         <label class="inline-flex items-center gap-2 text-sm text-slate-700 whitespace-nowrap">
                             <input type="hidden" name="mine" value="0">
-                            <input type="checkbox" name="mine" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="rounded border-slate-300" @checked(($filters['mine'] ?? '1') === '1')>
+                            <input type="checkbox" name="mine" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-4 w-4 rounded border-slate-300" @checked(($filters['mine'] ?? '1') === '1')>
                             <span>Jen moje agenda</span>
                         </label>
                     @else
@@ -77,7 +77,7 @@
                         <div class="text-xs text-slate-500 whitespace-nowrap">Jen vase agenda</div>
                     @endif
                     <label class="inline-flex items-center gap-2 text-sm text-slate-700 whitespace-nowrap">
-                        <input type="checkbox" name="overdue_only" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="rounded border-slate-300" @checked(!empty($filters['overdue_only']))>
+                        <input type="checkbox" name="overdue_only" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-4 w-4 rounded border-slate-300" @checked(!empty($filters['overdue_only']))>
                         <span>Jen overdue</span>
                     </label>
                 </div>
