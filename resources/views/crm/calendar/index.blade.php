@@ -21,14 +21,13 @@
         $dayHeaders = ['Po', 'Ut', 'St', 'Ct', 'Pa', 'So', 'Ne'];
     @endphp
 
-    <form id="calendar-filter-form" method="GET" action="{{ route('calendar.index') }}" class="mb-4 rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
-        <input type="hidden" name="date" value="{{ $calendarDate->format('Y-m-d') }}">
-        <input type="hidden" name="view" value="{{ $viewMode }}">
+    <form id="calendar-filter-form" method="GET" action="{{ route('calendar.index') }}" class="mb-4">
+    <input type="hidden" name="date" value="{{ $calendarDate->format('Y-m-d') }}">
+    <input type="hidden" name="view" value="{{ $viewMode }}">
 
-        <div class="grid gap-3 xl:grid-cols-[auto_minmax(14rem,18rem)_auto_auto_auto_auto] xl:items-end">
-        <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
-            <label class="block text-xs font-medium text-slate-700">Zobrazeni</label>
-            <div class="mt-0.5 inline-flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
+    <div class="grid gap-3 xl:grid-cols-[auto_auto_auto_minmax(16rem,22rem)] xl:items-end">
+        <div>
+            <div class="inline-flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
                 @foreach (['day' => 'Den', 'week' => 'Tyden', 'month' => 'Mesic'] as $modeValue => $modeLabel)
                     <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['view' => $modeValue, 'date' => $calendarDate->format('Y-m-d')])) }}"
                        class="rounded-md px-3 py-1.5 text-sm font-medium transition {{ $viewMode === $modeValue ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900' }}">
@@ -37,37 +36,7 @@
                 @endforeach
             </div>
         </div>
-        @if ($isManager)
-            <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
-                <label for="calendar_header_assigned_user_id" class="block text-xs font-medium text-slate-700">Uzivatel (agenda)</label>
-                <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" class="mt-0.5 w-full rounded-md border-slate-300 py-1.5 text-sm">
-                    <option value="">Vse</option>
-                    @foreach ($users as $user)
-                        <option value="{{ $user->id }}" @selected(($filters['assigned_user_id'] ?? '') === (string) $user->id)>{{ $user->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-        @endif
-        <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
-            <label class="block text-xs font-medium text-slate-700">Rozsah</label>
-            @if ($isManager)
-                <label class="mt-1 inline-flex items-center gap-2 text-sm text-slate-700 whitespace-nowrap">
-                    <input type="hidden" name="mine" value="0">
-                    <input type="checkbox" name="mine" value="1" class="rounded border-slate-300" @checked(($filters['mine'] ?? '1') === '1')>
-                    <span>Jen moje agenda</span>
-                </label>
-            @else
-                <input type="hidden" name="mine" value="1">
-                <div class="mt-1 text-xs text-slate-500 whitespace-nowrap">Jen vase agenda</div>
-            @endif
-        </div>
-        <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
-            <label class="block text-xs font-medium text-slate-700">Filtr</label>
-            <label class="mt-1 inline-flex items-center gap-2 text-sm text-slate-700 whitespace-nowrap">
-                <input type="checkbox" name="overdue_only" value="1" class="rounded border-slate-300" @checked(!empty($filters['overdue_only']))>
-                <span>Jen overdue</span>
-            </label>
-        </div>
+
         <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
             <div class="flex h-full flex-wrap items-end gap-2 text-sm">
                 <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $prevDate])) }}" class="rounded-md bg-slate-200 px-3 py-1.5 font-medium text-slate-700">Predchozi</a>
@@ -75,14 +44,42 @@
                 <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $nextDate])) }}" class="rounded-md bg-slate-200 px-3 py-1.5 font-medium text-slate-700">Dalsi</a>
             </div>
         </div>
+
         <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
-            <div class="flex h-full items-end justify-end gap-3">
-            <button type="submit" class="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white">Zobrazit</button>
-            <a href="{{ route('calendar.index') }}" class="text-sm text-slate-600 hover:text-slate-900">Reset</a>
+            <div class="flex h-full min-w-[8.5rem] flex-col justify-end gap-2">
+                <a href="{{ route('calendar.index') }}" class="rounded-md bg-white px-3 py-1.5 text-sm text-slate-600 ring-1 ring-slate-300 hover:text-slate-900">Reset</a>
             </div>
         </div>
+
+        <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
+            <label class="block text-xs font-medium text-slate-700">Agenda / filtr</label>
+            @if ($isManager)
+                <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="mt-0.5 w-full rounded-md border-slate-300 py-1.5 text-sm">
+                    <option value="">Vse</option>
+                    @foreach ($users as $user)
+                        <option value="{{ $user->id }}" @selected(($filters['assigned_user_id'] ?? '') === (string) $user->id)>{{ $user->name }}</option>
+                    @endforeach
+                </select>
+            @endif
+                <div class="mt-2 space-y-1.5">
+                    @if ($isManager)
+                        <label class="inline-flex items-center gap-2 text-sm text-slate-700 whitespace-nowrap">
+                            <input type="hidden" name="mine" value="0">
+                            <input type="checkbox" name="mine" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="rounded border-slate-300" @checked(($filters['mine'] ?? '1') === '1')>
+                            <span>Jen moje agenda</span>
+                        </label>
+                    @else
+                        <input type="hidden" name="mine" value="1">
+                        <div class="text-xs text-slate-500 whitespace-nowrap">Jen vase agenda</div>
+                    @endif
+                    <label class="inline-flex items-center gap-2 text-sm text-slate-700 whitespace-nowrap">
+                        <input type="checkbox" name="overdue_only" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="rounded border-slate-300" @checked(!empty($filters['overdue_only']))>
+                        <span>Jen overdue</span>
+                    </label>
+                </div>
         </div>
-    </form>
+    </div>
+</form>
 
     <div class="mb-3 grid gap-2 sm:grid-cols-3">
         <div class="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
