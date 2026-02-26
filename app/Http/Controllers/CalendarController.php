@@ -252,9 +252,10 @@ class CalendarController extends Controller
             return ['type' => 'week', 'days' => $days];
         }
 
-        $start = $date->copy()->startOfMonth()->startOfWeek(Carbon::MONDAY);
+        // Compact month view: show 5 weeks centered around selected day (-2/+2 weeks)
+        $start = $date->copy()->startOfWeek(Carbon::MONDAY)->subWeeks(2);
         $rows = [];
-        for ($week = 0; $week < 6; $week++) {
+        for ($week = 0; $week < 5; $week++) {
             $row = [];
             for ($dayIndex = 0; $dayIndex < 7; $dayIndex++) {
                 $day = $start->copy()->addDays(($week * 7) + $dayIndex);
