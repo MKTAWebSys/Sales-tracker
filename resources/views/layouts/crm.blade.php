@@ -21,12 +21,12 @@
                 display: grid;
                 grid-template-columns: 14.5rem minmax(0, 1fr);
                 min-height: 100vh;
+                transition: grid-template-columns 160ms ease;
             }
 
-            .crm-shell,
             .crm-sidebar,
             .crm-main {
-                transition: all 160ms ease;
+                transition: none;
             }
 
             html.crm-sidebar-collapsed .crm-shell,
@@ -53,6 +53,10 @@
                 overflow: hidden;
                 white-space: nowrap;
                 pointer-events: none;
+            }
+
+            .crm-nav-label {
+                transition: opacity 120ms ease;
             }
 
             html.crm-sidebar-collapsed .crm-shell .crm-next-company-btn,
