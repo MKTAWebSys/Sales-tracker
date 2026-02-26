@@ -25,7 +25,7 @@
     <input type="hidden" name="date" value="{{ $calendarDate->format('Y-m-d') }}">
     <input type="hidden" name="view" value="{{ $viewMode }}">
 
-    <div class="grid gap-3 xl:grid-cols-[18rem_18rem_minmax(28rem,1fr)] xl:items-stretch">
+    <div class="grid gap-3 xl:grid-cols-[18rem_18rem_auto] xl:items-stretch xl:justify-start">
         <div class="rounded-xl bg-white p-2 ring-1 ring-slate-200 h-[5.75rem] flex items-center">
             <div class="inline-flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
                 @foreach (['day' => 'Den', 'week' => 'Tyden', 'month' => 'Mesic'] as $modeValue => $modeLabel)
@@ -37,7 +37,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl bg-white p-2 ring-1 ring-slate-200 h-[5.75rem]">
+        <div class="rounded-xl bg-white p-2 ring-1 ring-slate-200 h-[5.75rem] xl:justify-self-start">
             <div class="flex h-full flex-wrap items-center gap-2 text-sm">
                 <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $prevDate])) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Predchozi" aria-label="Predchozi">
                     <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
