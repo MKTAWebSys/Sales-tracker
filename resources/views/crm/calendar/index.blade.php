@@ -25,8 +25,8 @@
     <input type="hidden" name="date" value="{{ $calendarDate->format('Y-m-d') }}">
     <input type="hidden" name="view" value="{{ $viewMode }}">
 
-    <div class="grid gap-3 xl:grid-cols-[auto_auto_auto_minmax(16rem,22rem)] xl:items-end">
-        <div>
+    <div class="grid gap-3 xl:grid-cols-[auto_auto_auto_minmax(18rem,24rem)] xl:items-stretch">
+        <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200 min-h-[5.75rem]">
             <div class="inline-flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
                 @foreach (['day' => 'Den', 'week' => 'Tyden', 'month' => 'Mesic'] as $modeValue => $modeLabel)
                     <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['view' => $modeValue, 'date' => $calendarDate->format('Y-m-d')])) }}"
@@ -37,7 +37,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
+        <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200 min-h-[5.75rem]">
             <div class="flex h-full flex-wrap items-end gap-2 text-sm">
                 <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $prevDate])) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Predchozi" aria-label="Predchozi">
                     <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -53,7 +53,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
+        <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200 min-h-[5.75rem]">
             <div class="flex h-full min-w-[3.25rem] items-end justify-end">
                 <a href="{{ route('calendar.index') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-white text-slate-600 ring-1 ring-slate-300 hover:text-slate-900" title="Reset" aria-label="Reset">
                     <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -64,17 +64,20 @@
             </div>
         </div>
 
-        <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
+        <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200 min-h-[5.75rem]">
             <label class="block text-xs font-medium text-slate-700">Agenda / filtr</label>
-            @if ($isManager)
-                <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="mt-0.5 w-full rounded-md border-slate-300 py-1.5 text-sm">
-                    <option value="">Vse</option>
-                    @foreach ($users as $user)
-                        <option value="{{ $user->id }}" @selected(($filters['assigned_user_id'] ?? '') === (string) $user->id)>{{ $user->name }}</option>
-                    @endforeach
-                </select>
-            @endif
-                <div class="mt-2 space-y-1.5">
+                <div class="mt-1 grid gap-3 {{ $isManager ? 'grid-cols-[minmax(0,1fr)_auto]' : 'grid-cols-1' }}">
+                    @if ($isManager)
+                        <div>
+                            <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="w-full rounded-md border-slate-300 py-1.5 text-sm">
+                                <option value="">Vse</option>
+                                @foreach ($users as $user)
+                                    <option value="{{ $user->id }}" @selected(($filters['assigned_user_id'] ?? '') === (string) $user->id)>{{ $user->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+                    <div class="space-y-1.5">
                     @if ($isManager)
                         <label class="inline-flex items-center gap-2 text-sm text-slate-700 whitespace-nowrap">
                             <input type="hidden" name="mine" value="0">
@@ -90,6 +93,7 @@
                         <span>Jen overdue</span>
                     </label>
                 </div>
+            </div>
         </div>
     </div>
 </form>
