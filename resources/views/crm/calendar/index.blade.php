@@ -39,9 +39,17 @@
 
         <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
             <div class="flex h-full flex-wrap items-end gap-2 text-sm">
-                <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $prevDate])) }}" class="rounded-md bg-slate-200 px-3 py-1.5 font-medium text-slate-700">Predchozi</a>
+                <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $prevDate])) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Predchozi" aria-label="Predchozi">
+                    <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12.5 4.5 7 10l5.5 5.5" />
+                    </svg>
+                </a>
                 <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $todayDate])) }}" class="rounded-md {{ $isToday ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700' }} px-3 py-1.5 font-medium">Dnes</a>
-                <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $nextDate])) }}" class="rounded-md bg-slate-200 px-3 py-1.5 font-medium text-slate-700">Dalsi</a>
+                <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $nextDate])) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Dalsi" aria-label="Dalsi">
+                    <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M7.5 4.5 13 10l-5.5 5.5" />
+                    </svg>
+                </a>
             </div>
         </div>
 
