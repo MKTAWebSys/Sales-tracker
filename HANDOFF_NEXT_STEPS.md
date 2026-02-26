@@ -13,6 +13,8 @@
 - Caller mode swipe UX
 - Quick callback presety + rychly datum/cas
 - Floating active call panel + quick note AJAX
+- Kalendar header UX cleanup + auto-refresh filtry
+- `Mesic` view = rolling 5 tydnu kolem vybraneho dne
 
 ## Dulezite workflow zmeny (shrnutí)
 
@@ -44,6 +46,10 @@
    - admin panel cile obvolani uz neni na dashboardu
 4. `Moje fronta` a `Firmy`:
    - bulk akce pro `first caller`
+5. `Kalendar`:
+   - vyber uzivatele meni i denni agendu
+   - `Jen moje agenda` je deaktivovane pri vyberu konkretniho uzivatele
+   - mesicni pohled ukazuje 5 tydnu kolem vybraneho dne
 
 ## Spusteni lokalne (Windows)
 
@@ -63,6 +69,8 @@ npm run dev
 
 ## Doporučené dalsi kroky
 
-1. Sprava `cilu obvolani` pouze v `Uzivatele` (UI sekce / edit)
-2. Testy pro single-active-call a finalize flow
-3. Outlook/Google sync priprava (`external_calendar_*` sloupce + `.ics` export)
+1. Sloucit branch do `main` a pokracovat uz primo na `main` (pokud je to preferovany workflow)
+2. Doladit posledni px v kalendar headeru (spacing / zarovnani) podle monitoru
+3. Sprava `cilu obvolani` pouze v `Uzivatele` (UI sekce / edit)
+4. Testy pro single-active-call a finalize flow
+5. Outlook/Google sync priprava (`external_calendar_*` sloupce + `.ics` export)

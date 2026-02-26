@@ -70,6 +70,9 @@ Pracovni plan pro prvni verzi interni webove aplikace `Call CRM MVP`.
   - barevne odliseni urgence a pretizeni dnu (8+)
   - tydenni souhrn (hotovo / neudelano)
   - klik z mesice -> den view
+  - compact header ovladani (bez velkych boxu, auto-refresh filtru)
+  - `Mesic` view jako rolling okno 5 tydnu kolem vybraneho dne (`-2/+2`)
+  - opraveny filtr uzivatele (ma prioritu pred `Jen moje agenda`)
 - Demo seedery (vcetne dat pro `petr.zvelebil@awebsys.cz`)
 
 ### Co melo nasledovat (dalsi rozumne kroky)
@@ -83,6 +86,8 @@ Pracovni plan pro prvni verzi interni webove aplikace `Call CRM MVP`.
 - Outlook/Google sync priprava:
   - external event IDs/sloupce pro `follow_ups` a `meetings`
   - `.ics` export den/tyden (viz bod 5)
+- Kalendar UX:
+  - doladit finalni layout headeru (spacing / zarovnani) podle realneho pouziti na malem monitoru
 - Uklidit lokalni pomocne/backup soubory (pokud se objevi)
 
 ## 1) Data model
