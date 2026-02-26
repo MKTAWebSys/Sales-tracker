@@ -25,71 +25,57 @@
     <input type="hidden" name="date" value="{{ $calendarDate->format('Y-m-d') }}">
     <input type="hidden" name="view" value="{{ $viewMode }}">
 
-    <div class="grid gap-2 xl:grid-cols-[fit-content(13.5rem)_14rem_auto] xl:items-stretch xl:justify-start">
-        <div class="rounded-xl bg-white px-1.5 py-1 ring-1 ring-slate-200 h-[3.75rem] flex items-center justify-start">
-            <div class="inline-flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
-                @foreach (['day' => 'Den', 'week' => 'Tyden', 'month' => 'Mesic'] as $modeValue => $modeLabel)
-                    <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['view' => $modeValue, 'date' => $calendarDate->format('Y-m-d')])) }}"
-                       class="rounded-md px-3 py-1.5 text-sm font-medium transition {{ $viewMode === $modeValue ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900' }}">
-                        {{ $modeLabel }}
-                    </a>
-                @endforeach
-            </div>
+    <div class="flex flex-wrap items-center gap-2">
+        <div class="inline-flex h-10 items-center rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
+            @foreach (['day' => 'Den', 'week' => 'Tyden', 'month' => 'Mesic'] as $modeValue => $modeLabel)
+                <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['view' => $modeValue, 'date' => $calendarDate->format('Y-m-d')])) }}"
+                   class="inline-flex h-8 items-center rounded-md px-3 text-sm font-medium transition {{ $viewMode === $modeValue ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900' }}">
+                    {{ $modeLabel }}
+                </a>
+            @endforeach
         </div>
 
-        <div class="rounded-xl bg-white p-1.5 ring-1 ring-slate-200 h-[4.25rem] xl:justify-self-start">
-            <div class="flex h-full flex-wrap items-center gap-2 text-sm">
-                <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $prevDate])) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Predchozi" aria-label="Predchozi">
-                    <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12.5 4.5 7 10l5.5 5.5" />
-                    </svg>
-                </a>
-                    <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $todayDate])) }}" class="inline-flex h-8 items-center rounded-md {{ $isToday ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700' }} px-3 font-medium">Dnes</a>
-                <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $nextDate])) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Dalsi" aria-label="Dalsi">
-                    <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M7.5 4.5 13 10l-5.5 5.5" />
-                    </svg>
-                </a>
-            </div>
+        <div class="inline-flex h-10 items-center gap-2">
+            <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $prevDate])) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Predchozi" aria-label="Predchozi">
+                <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12.5 4.5 7 10l5.5 5.5" />
+                </svg>
+            </a>
+            <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $todayDate])) }}" class="inline-flex h-8 items-center rounded-md {{ $isToday ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700' }} px-3 text-sm font-medium">Dnes</a>
+            <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $nextDate])) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Dalsi" aria-label="Dalsi">
+                <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M7.5 4.5 13 10l-5.5 5.5" />
+                </svg>
+            </a>
         </div>
 
-        <div class="rounded-xl bg-white p-1.5 ring-1 ring-slate-200 h-[4.25rem]">
-                <div class="grid h-full gap-2 {{ $isManager ? 'grid-cols-[minmax(0,12rem)_minmax(0,1fr)_3rem]' : 'grid-cols-[minmax(0,1fr)_3rem]' }}">
-                    @if ($isManager)
-                        <div class="self-center">
-                            <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-8 w-full rounded-md border-slate-300 py-0 text-sm">
-                                <option value="">Uzivatel: Vse</option>
-                                @foreach ($users as $user)
-                                    <option value="{{ $user->id }}" @selected(($filters['assigned_user_id'] ?? '') === (string) $user->id)>{{ $user->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    @endif
-                    <div class="space-y-1 self-center">
-                    @if ($isManager)
-                        <label class="inline-flex items-center gap-1.5 text-sm leading-none text-slate-700 whitespace-nowrap">
-                            <input type="hidden" name="mine" value="0">
-                            <input type="checkbox" name="mine" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-4 w-4 rounded border-slate-300" @checked(($filters['mine'] ?? '1') === '1')>
-                            <span>Jen moje agenda</span>
-                        </label>
-                    @else
-                        <input type="hidden" name="mine" value="1">
-                        <div class="text-xs text-slate-500 whitespace-nowrap">Jen vase agenda</div>
-                    @endif
-                    <label class="inline-flex items-center gap-1.5 text-sm leading-none text-slate-700 whitespace-nowrap">
-                        <input type="checkbox" name="overdue_only" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-4 w-4 rounded border-slate-300" @checked(!empty($filters['overdue_only']))>
-                        <span>Jen overdue</span>
-                    </label>
-                </div>
-                <div class="self-center justify-self-end">
-                    <a href="{{ route('calendar.index') }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white text-slate-600 ring-1 ring-slate-300 hover:text-slate-900" title="Reset" aria-label="Reset">
-                        <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M16 10a6 6 0 1 1-2-4.47" />
-                            <path d="M16 4v4h-4" />
-                        </svg>
-                    </a>
-                </div>
-            </div>
+        <div class="inline-flex h-10 items-center gap-2 rounded-lg bg-white px-2 py-1 ring-1 ring-slate-200">
+            @if ($isManager)
+                <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-8 min-w-[12rem] rounded-md border-slate-300 py-0 text-sm">
+                    <option value="">Uzivatel: Vse</option>
+                    @foreach ($users as $user)
+                        <option value="{{ $user->id }}" @selected(($filters['assigned_user_id'] ?? '') === (string) $user->id)>{{ $user->name }}</option>
+                    @endforeach
+                </select>
+                <input type="hidden" name="mine" value="0">
+            @else
+                <input type="hidden" name="mine" value="1">
+            @endif
+
+            <label class="inline-flex h-8 items-center gap-1.5 text-sm text-slate-700 whitespace-nowrap">
+                <input type="checkbox" name="mine" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-4 w-4 rounded border-slate-300" @checked(($filters['mine'] ?? '1') === '1')>
+                <span>Jen moje agenda</span>
+            </label>
+            <label class="inline-flex h-8 items-center gap-1.5 text-sm text-slate-700 whitespace-nowrap">
+                <input type="checkbox" name="overdue_only" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-4 w-4 rounded border-slate-300" @checked(!empty($filters['overdue_only']))>
+                <span>Jen overdue</span>
+            </label>
+            <a href="{{ route('calendar.index') }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white text-slate-600 ring-1 ring-slate-300 hover:text-slate-900" title="Reset" aria-label="Reset">
+                <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 10a6 6 0 1 1-2-4.47" />
+                    <path d="M16 4v4h-4" />
+                </svg>
+            </a>
         </div>
     </div>
 </form>
