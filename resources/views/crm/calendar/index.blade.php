@@ -54,12 +54,11 @@
         </div>
 
         <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200 h-[5.75rem]">
-            <label class="block text-xs font-medium text-slate-700">Agenda / filtr</label>
-                <div class="mt-1 grid h-[calc(100%-1.25rem)] gap-3 {{ $isManager ? 'grid-cols-[minmax(0,13rem)_minmax(0,1fr)]' : 'grid-cols-1' }}">
+                <div class="grid h-full gap-3 {{ $isManager ? 'grid-cols-[minmax(0,13rem)_minmax(0,1fr)]' : 'grid-cols-1' }}">
                     @if ($isManager)
                         <div class="self-center">
                             <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="w-full rounded-md border-slate-300 py-1.5 text-sm">
-                                <option value="">Vse</option>
+                                <option value="">Uzivatel: Vse</option>
                                 @foreach ($users as $user)
                                     <option value="{{ $user->id }}" @selected(($filters['assigned_user_id'] ?? '') === (string) $user->id)>{{ $user->name }}</option>
                                 @endforeach
