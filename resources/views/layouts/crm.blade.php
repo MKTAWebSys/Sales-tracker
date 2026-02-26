@@ -120,10 +120,8 @@
                 margin-bottom: 0.5rem;
             }
 
-            .crm-nav-link {
-                min-height: 2.5rem;
-            }
-
+            .crm-nav-link,
+            .crm-next-company-btn,
             .crm-sidebar-footer-btn {
                 min-height: 2.5rem;
             }
