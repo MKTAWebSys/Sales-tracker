@@ -330,7 +330,7 @@
     @if ($activeCallBanner && ! $hideActiveCallBanner)
         <a href="{{ route('calls.finish', ['call' => $activeCallBanner, 'caller_mode' => request()->routeIs('caller-mode.*') ? 1 : null]) }}"
            class="fixed bottom-4 right-4 z-50 block w-[min(32rem,calc(100vw-1rem))] rounded-xl border border-slate-700/70 bg-gradient-to-b from-slate-950/95 via-slate-900/95 to-slate-800/95 p-3 text-sm text-white shadow-2xl ring-1 ring-white/10 backdrop-blur hover:from-slate-900/95 hover:to-slate-800/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
-            <div class="flex flex-wrap items-start justify-between gap-2">
+            <div class="flex items-stretch gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
                         <span class="inline-flex h-2 w-2 shrink-0 rounded-full bg-emerald-400"></span>
@@ -363,13 +363,13 @@
                         </form>
                     </details>
                 </div>
-                <div class="flex shrink-0 flex-wrap items-center gap-2" data-row-link-ignore>
-                    <form method="POST" action="{{ route('calls.end', $activeCallBanner) }}" data-row-link-ignore>
+                <div class="flex shrink-0 items-stretch" data-row-link-ignore>
+                    <form method="POST" action="{{ route('calls.end', $activeCallBanner) }}" class="h-full" data-row-link-ignore>
                         @csrf
                         @if (request()->routeIs('caller-mode.*'))
                             <input type="hidden" name="caller_mode" value="1">
                         @endif
-                        <button type="submit" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-rose-500 text-white ring-1 ring-rose-300/40 hover:bg-rose-400" title="Ukoncit hovor" aria-label="Ukoncit hovor">
+                        <button type="submit" class="inline-flex h-full min-h-[5.25rem] w-10 items-center justify-center rounded-md bg-rose-500 text-white ring-1 ring-rose-300/40 hover:bg-rose-400" title="Ukoncit hovor" aria-label="Ukoncit hovor">
                             <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                 <path d="M4.5 12.5a9 9 0 0 1 11 0" />
                                 <path d="M6.5 11.5 5 15l2.3 1.1 1.2-2.2" />
