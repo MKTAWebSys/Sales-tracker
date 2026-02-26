@@ -245,7 +245,11 @@
                         <a href="{{ route('companies.next-mine', array_filter(['current_company_id' => $currentCompanyId, 'skip_lost' => 1])) }}"
                            class="crm-next-company-btn inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700">
                             <span class="crm-nav-icon inline-flex h-4 w-4 items-center justify-center">
-                                <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8"><path d="M4 10h10"/><path d="m11 6 4 4-4 4"/></svg>
+                                <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M4.5 4.5h2.7l.9 2.5-1.7.9a9.8 9.8 0 0 0 4.7 4.7l.9-1.7 2.5.9v2.7a1.8 1.8 0 0 1-1.8 1.8A10.7 10.7 0 0 1 2.7 6.3 1.8 1.8 0 0 1 4.5 4.5Z" />
+                                    <path d="M11.5 6.5h4" />
+                                    <path d="m13.8 4.2 2.3 2.3-2.3 2.3" />
+                                </svg>
                             </span>
                             <span class="crm-next-company-label">Dalsi firma</span>
                         </a>
@@ -370,7 +374,7 @@
                             <input type="hidden" name="caller_mode" value="1">
                         @endif
                         <button type="submit" class="inline-flex h-full aspect-square items-center justify-center rounded-lg bg-rose-500 text-white ring-1 ring-rose-300/40 hover:bg-rose-400" title="Ukoncit hovor" aria-label="Ukoncit hovor">
-                            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <svg viewBox="0 0 20 20" fill="none" class="h-5 w-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M4.5 12.5a9 9 0 0 1 11 0" />
                                 <path d="M6.5 11.5 5 15l2.3 1.1 1.2-2.2" />
                                 <path d="M13.5 11.5 15 15l-2.3 1.1-1.2-2.2" />
