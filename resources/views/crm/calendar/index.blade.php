@@ -21,10 +21,17 @@
         $dayHeaders = ['Po', 'Ut', 'St', 'Ct', 'Pa', 'So', 'Ne'];
     @endphp
 
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div class="mb-4 flex flex-wrap items-end justify-between gap-3 rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
         <div>
-            <h1 class="text-xl font-semibold">Kalendar aktivit</h1>
-            <p class="text-xs text-slate-600">Prehled follow-upu a schuzek v rezimu den / tyden / mesic.</p>
+            <label class="block text-xs font-medium text-slate-700">Zobrazeni</label>
+            <div class="mt-0.5 inline-flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
+                @foreach (['day' => 'Den', 'week' => 'Tyden', 'month' => 'Mesic'] as $modeValue => $modeLabel)
+                    <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['view' => $modeValue, 'date' => $calendarDate->format('Y-m-d')])) }}"
+                       class="rounded-md px-3 py-1.5 text-sm font-medium transition {{ $viewMode === $modeValue ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900' }}">
+                        {{ $modeLabel }}
+                    </a>
+                @endforeach
+            </div>
         </div>
         <div class="flex flex-wrap items-center gap-2 text-sm">
             <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $prevDate])) }}" class="rounded-md bg-slate-200 px-3 py-1.5 font-medium text-slate-700">Predchozi</a>
@@ -37,20 +44,8 @@
         <input type="hidden" name="date" value="{{ $calendarDate->format('Y-m-d') }}">
         <input type="hidden" name="view" value="{{ $viewMode }}">
 
-        <div class="md:col-span-4">
-            <label class="block text-xs font-medium text-slate-700">Zobrazeni</label>
-            <div class="mt-0.5 inline-flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
-                @foreach (['day' => 'Den', 'week' => 'Tyden', 'month' => 'Mesic'] as $modeValue => $modeLabel)
-                    <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['view' => $modeValue, 'date' => $calendarDate->format('Y-m-d')])) }}"
-                       class="rounded-md px-3 py-1.5 text-sm font-medium transition {{ $viewMode === $modeValue ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900' }}">
-                        {{ $modeLabel }}
-                    </a>
-                @endforeach
-            </div>
-        </div>
-
         @if ($isManager)
-            <div class="md:col-span-3">
+            <div class="md:col-span-4">
                 <label for="assigned_user_id" class="block text-xs font-medium text-slate-700">Uzivatel (agenda)</label>
                 <select id="assigned_user_id" name="assigned_user_id" class="mt-0.5 w-full rounded-md border-slate-300 py-1.5 text-sm">
                     <option value="">Vse</option>
@@ -61,7 +56,7 @@
             </div>
         @endif
 
-        <div class="{{ $isManager ? 'md:col-span-2' : 'md:col-span-3' }}">
+        <div class="{{ $isManager ? 'md:col-span-3' : 'md:col-span-4' }}">
             <label class="block text-xs font-medium text-slate-700">Rozsah</label>
             @if ($isManager)
                 <label class="mt-1 inline-flex items-center gap-2 text-sm text-slate-700">
@@ -75,7 +70,7 @@
             @endif
         </div>
 
-        <div class="md:col-span-1">
+        <div class="md:col-span-2">
             <label class="block text-xs font-medium text-slate-700">Filtr</label>
             <label class="mt-1 inline-flex items-center gap-2 text-sm text-slate-700">
                 <input type="checkbox" name="overdue_only" value="1" class="rounded border-slate-300" @checked(!empty($filters['overdue_only']))>
@@ -83,7 +78,7 @@
             </label>
         </div>
 
-        <div class="md:col-span-2 flex items-end justify-end gap-3">
+        <div class="md:col-span-3 flex items-end justify-end gap-3">
             <button type="submit" class="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white">Zobrazit</button>
             <a href="{{ route('calendar.index') }}" class="text-sm text-slate-600 hover:text-slate-900">Reset</a>
         </div>
@@ -221,14 +216,14 @@
                 </div>
             </div>
         @else
-            <div class="grid grid-cols-7 gap-1.5 text-xs font-medium text-slate-500">
+            <div class="grid grid-cols-7 gap-2 text-xs font-medium text-slate-500">
                 @foreach ($dayHeaders as $label)
-                    <div class="px-1.5 py-0.5">{{ $label }}</div>
+                    <div class="px-2 py-1">{{ $label }}</div>
                 @endforeach
             </div>
-            <div class="mt-1.5 grid gap-1.5">
+            <div class="mt-2 grid gap-2">
                 @foreach ($calendarGrid['rows'] as $row)
-                    <div class="grid grid-cols-7 gap-1.5">
+                    <div class="grid grid-cols-7 gap-2">
                         @foreach ($row as $cell)
                             @php
                                 $isOverdueDay = $cell['date']->lt($today) && ($cell['counts']['todoTotal'] ?? 0) > 0;
@@ -247,20 +242,20 @@
                                                 : 'border-slate-200 bg-white hover:bg-slate-50'))));
                             @endphp
                             <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['date' => $cell['key'], 'view' => 'day'])) }}"
-                               class="block min-h-20 rounded-xl border p-1.5 transition {{ $monthCellClass }} {{ ! $cell['isCurrentMonth'] ? 'opacity-60' : '' }}">
+                               class="block min-h-24 rounded-xl border p-2 transition {{ $monthCellClass }} {{ ! $cell['isCurrentMonth'] ? 'opacity-60' : '' }}">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-sm font-semibold">{{ $cell['date']->format('j') }}</span>
                                     @if ($cell['isToday'])
                                         <span class="rounded-full px-1.5 py-0.5 text-[10px] {{ $cell['isSelected'] ? 'bg-white text-slate-900' : 'bg-slate-900 text-white' }}">dnes</span>
                                     @endif
                                 </div>
-                                <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0 text-[10px] leading-tight">
-                                    <span class="{{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-600' }}">N {{ $cell['counts']['todoTotal'] ?? 0 }}</span>
-                                    <span class="{{ $cell['isSelected'] ? 'text-amber-200' : 'text-amber-700' }}">FU {{ $cell['counts']['todoFollowUps'] ?? 0 }}</span>
-                                    <span class="{{ $cell['isSelected'] ? 'text-emerald-200' : 'text-emerald-700' }}">SCH {{ $cell['counts']['todoMeetings'] ?? 0 }}</span>
-                                    <span class="{{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-500' }}">H {{ $cell['counts']['doneTotal'] ?? 0 }}</span>
+                                <div class="mt-2 text-[11px] {{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-600' }}">Neudelano {{ $cell['counts']['todoTotal'] ?? 0 }}</div>
+                                <div class="mt-1 space-y-0.5 text-[10px]">
+                                    <div class="{{ $cell['isSelected'] ? 'text-amber-200' : 'text-amber-700' }}">FU {{ $cell['counts']['todoFollowUps'] ?? 0 }}</div>
+                                    <div class="{{ $cell['isSelected'] ? 'text-emerald-200' : 'text-emerald-700' }}">SCH {{ $cell['counts']['todoMeetings'] ?? 0 }}</div>
+                                    <div class="{{ $cell['isSelected'] ? 'text-slate-200' : 'text-slate-500' }}">Hotovo {{ $cell['counts']['doneTotal'] ?? 0 }}</div>
                                     @if ($isOverloadedDay)
-                                        <span class="{{ $cell['isSelected'] ? 'text-fuchsia-200' : 'text-fuchsia-700' }}">8+</span>
+                                        <div class="{{ $cell['isSelected'] ? 'text-fuchsia-200' : 'text-fuchsia-700' }}">Pretizeni 8+</div>
                                     @endif
                                 </div>
                             </a>
