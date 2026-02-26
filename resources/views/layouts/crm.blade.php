@@ -328,37 +328,42 @@
     </div>
 
     @if ($activeCallBanner && ! $hideActiveCallBanner)
-        <div class="fixed bottom-4 right-4 z-50 w-[min(42rem,calc(100vw-2rem))] rounded-xl border border-violet-200 bg-violet-50/95 p-4 text-sm text-violet-900 shadow-xl ring-1 ring-violet-100 backdrop-blur">
-            <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="fixed bottom-4 right-4 z-50 w-[min(42rem,calc(100vw-2rem))] rounded-xl border border-violet-200 bg-violet-50/95 p-3 text-sm text-violet-900 shadow-xl ring-1 ring-violet-100 backdrop-blur">
+            <div class="flex flex-wrap items-start justify-between gap-2">
                 <div class="min-w-0 flex-1">
-                    <div class="font-semibold">Probiha hovor</div>
-                    <div class="mt-1">
+                    <div class="font-semibold leading-tight">Probiha hovor</div>
+                    <div class="mt-0.5 text-xs leading-tight sm:text-sm">
                         {{ $activeCallBanner->company?->name ?? 'Bez firmy' }}
                         | start {{ $activeCallBanner->called_at?->format('Y-m-d H:i:s') ?? '-' }}
                         | bezi
                         <span class="js-active-call-timer font-semibold" data-called-at="{{ $activeCallBanner->called_at?->toIso8601String() ?? '' }}">00:00</span>
                     </div>
-                    <form method="POST" action="{{ route('calls.quick-note', $activeCallBanner) }}" class="js-active-call-quick-note-form mt-3 flex flex-col gap-2 sm:flex-row sm:items-start" data-row-link-ignore>
-                        @csrf
-                        <textarea
-                            name="note"
-                            rows="2"
-                            data-row-link-ignore
-                            class="w-full rounded-md border-violet-200 bg-white/90 text-sm text-slate-900 placeholder:text-slate-400 focus:border-violet-400 focus:ring-violet-400 sm:min-w-[22rem]"
-                            placeholder="Rychla poznamka behem hovoru..."
-                        ></textarea>
-                        <div class="flex items-center gap-2">
-                            <button type="submit" class="js-active-call-quick-note-submit rounded-md bg-violet-700 px-3 py-2 text-xs font-medium text-white sm:mt-0">
-                                Ulozit poznamku
-                            </button>
-                            <span class="js-active-call-quick-note-status text-xs text-violet-700" aria-live="polite"></span>
-                        </div>
-                    </form>
+                    <details class="mt-2 rounded-md border border-violet-200/80 bg-white/60 p-2" data-row-link-ignore>
+                        <summary class="cursor-pointer select-none text-xs font-medium text-violet-800">
+                            Rychla poznamka
+                        </summary>
+                        <form method="POST" action="{{ route('calls.quick-note', $activeCallBanner) }}" class="js-active-call-quick-note-form mt-2 flex flex-col gap-2 sm:flex-row sm:items-start" data-row-link-ignore>
+                            @csrf
+                            <textarea
+                                name="note"
+                                rows="2"
+                                data-row-link-ignore
+                                class="w-full rounded-md border-violet-200 bg-white/90 text-sm text-slate-900 placeholder:text-slate-400 focus:border-violet-400 focus:ring-violet-400 sm:min-w-[18rem]"
+                                placeholder="Rychla poznamka behem hovoru..."
+                            ></textarea>
+                            <div class="flex items-center gap-2">
+                                <button type="submit" class="js-active-call-quick-note-submit rounded-md bg-violet-700 px-3 py-2 text-xs font-medium text-white sm:mt-0">
+                                    Ulozit
+                                </button>
+                                <span class="js-active-call-quick-note-status text-xs text-violet-700" aria-live="polite"></span>
+                            </div>
+                        </form>
+                    </details>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex shrink-0 flex-wrap items-center gap-2">
                     <a href="{{ route('calls.finish', ['call' => $activeCallBanner, 'caller_mode' => request()->routeIs('caller-mode.*') ? 1 : null]) }}"
                        class="rounded-md bg-violet-700 px-3 py-2 text-xs font-medium text-white">
-                        Zapsat poznamku / vratit se k hovoru
+                        Vratit se k hovoru
                     </a>
                     <form method="POST" action="{{ route('calls.end', $activeCallBanner) }}" data-row-link-ignore>
                         @csrf
