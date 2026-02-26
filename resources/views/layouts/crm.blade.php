@@ -328,19 +328,22 @@
     </div>
 
     @if ($activeCallBanner && ! $hideActiveCallBanner)
-        <div class="fixed bottom-4 right-4 z-50 w-[min(42rem,calc(100vw-2rem))] rounded-xl border border-violet-200 bg-violet-50/95 p-3 text-sm text-violet-900 shadow-xl ring-1 ring-violet-100 backdrop-blur">
+        <a href="{{ route('calls.finish', ['call' => $activeCallBanner, 'caller_mode' => request()->routeIs('caller-mode.*') ? 1 : null]) }}"
+           class="fixed bottom-4 right-4 z-50 block w-[min(32rem,calc(100vw-1rem))] rounded-xl border border-slate-700/70 bg-gradient-to-b from-slate-950/95 via-slate-900/95 to-slate-800/95 p-3 text-sm text-white shadow-2xl ring-1 ring-white/10 backdrop-blur hover:from-slate-900/95 hover:to-slate-800/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div class="min-w-0 flex-1">
-                    <div class="font-semibold leading-tight">Probiha hovor</div>
-                    <div class="mt-0.5 text-xs leading-tight sm:text-sm">
-                        {{ $activeCallBanner->company?->name ?? 'Bez firmy' }}
-                        | start {{ $activeCallBanner->called_at?->format('Y-m-d H:i:s') ?? '-' }}
-                        | bezi
-                        <span class="js-active-call-timer font-semibold" data-called-at="{{ $activeCallBanner->called_at?->toIso8601String() ?? '' }}">00:00</span>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex h-2 w-2 shrink-0 rounded-full bg-emerald-400"></span>
+                        <div class="min-w-0 truncate text-sm font-semibold leading-tight">
+                            {{ $activeCallBanner->company?->name ?? 'Bez firmy' }}
+                        </div>
+                        <span class="ml-auto shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white ring-1 ring-white/10">
+                            <span class="js-active-call-timer" data-called-at="{{ $activeCallBanner->called_at?->toIso8601String() ?? '' }}">00:00</span>
+                        </span>
                     </div>
-                    <details class="mt-2 rounded-md border border-violet-200/80 bg-white/60 p-2" data-row-link-ignore>
-                        <summary class="cursor-pointer select-none text-xs font-medium text-violet-800">
-                            Rychla poznamka
+                    <details class="mt-2 rounded-md border border-white/10 bg-white/5 p-2" data-row-link-ignore onclick="event.stopPropagation();">
+                        <summary class="cursor-pointer select-none text-xs font-medium text-slate-200" onclick="event.preventDefault(); this.parentElement.open = !this.parentElement.open;">
+                            Rychla poznamka / detail
                         </summary>
                         <form method="POST" action="{{ route('calls.quick-note', $activeCallBanner) }}" class="js-active-call-quick-note-form mt-2 flex flex-col gap-2 sm:flex-row sm:items-start" data-row-link-ignore>
                             @csrf
@@ -348,35 +351,31 @@
                                 name="note"
                                 rows="2"
                                 data-row-link-ignore
-                                class="w-full rounded-md border-violet-200 bg-white/90 text-sm text-slate-900 placeholder:text-slate-400 focus:border-violet-400 focus:ring-violet-400 sm:min-w-[18rem]"
+                                class="w-full rounded-md border-white/15 bg-white/95 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-300 focus:ring-emerald-300 sm:min-w-[18rem]"
                                 placeholder="Rychla poznamka behem hovoru..."
                             ></textarea>
                             <div class="flex items-center gap-2">
-                                <button type="submit" class="js-active-call-quick-note-submit rounded-md bg-violet-700 px-3 py-2 text-xs font-medium text-white sm:mt-0">
+                                <button type="submit" class="js-active-call-quick-note-submit rounded-md bg-emerald-500 px-3 py-2 text-xs font-medium text-slate-950 sm:mt-0">
                                     Ulozit
                                 </button>
-                                <span class="js-active-call-quick-note-status text-xs text-violet-700" aria-live="polite"></span>
+                                <span class="js-active-call-quick-note-status text-xs text-emerald-300" aria-live="polite"></span>
                             </div>
                         </form>
                     </details>
                 </div>
-                <div class="flex shrink-0 flex-wrap items-center gap-2">
-                    <a href="{{ route('calls.finish', ['call' => $activeCallBanner, 'caller_mode' => request()->routeIs('caller-mode.*') ? 1 : null]) }}"
-                       class="rounded-md bg-violet-700 px-3 py-2 text-xs font-medium text-white">
-                        Vratit se k hovoru
-                    </a>
+                <div class="flex shrink-0 flex-wrap items-center gap-2" data-row-link-ignore>
                     <form method="POST" action="{{ route('calls.end', $activeCallBanner) }}" data-row-link-ignore>
                         @csrf
                         @if (request()->routeIs('caller-mode.*'))
                             <input type="hidden" name="caller_mode" value="1">
                         @endif
-                        <button type="submit" class="rounded-md bg-white px-3 py-2 text-xs font-medium text-violet-800 ring-1 ring-violet-200">
+                        <button type="submit" class="rounded-md bg-white/10 px-3 py-2 text-xs font-medium text-white ring-1 ring-white/15 hover:bg-white/15">
                             Ukoncit hovor
                         </button>
                     </form>
                 </div>
             </div>
-        </div>
+        </a>
     @endif
 
     @if (session('status'))
