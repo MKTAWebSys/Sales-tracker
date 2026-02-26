@@ -56,7 +56,7 @@
         <div class="rounded-xl bg-white p-1.5 ring-1 ring-slate-200 h-[4.75rem]">
                 <div class="grid h-full gap-2 {{ $isManager ? 'grid-cols-[minmax(0,12rem)_minmax(0,1fr)_3rem]' : 'grid-cols-[minmax(0,1fr)_3rem]' }}">
                     @if ($isManager)
-                        <div class="self-center">
+                        <div class="self-start">
                             <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="w-full rounded-md border-slate-300 py-1.5 text-sm">
                                 <option value="">Uzivatel: Vse</option>
                                 @foreach ($users as $user)
@@ -65,7 +65,7 @@
                             </select>
                         </div>
                     @endif
-                    <div class="space-y-1 self-center">
+                    <div class="space-y-1 self-start">
                     @if ($isManager)
                         <label class="inline-flex items-center gap-1.5 text-sm text-slate-700 whitespace-nowrap">
                             <input type="hidden" name="mine" value="0">
@@ -81,7 +81,7 @@
                         <span>Jen overdue</span>
                     </label>
                 </div>
-                <div class="self-center justify-self-end">
+                <div class="self-start justify-self-end">
                     <a href="{{ route('calendar.index') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-white text-slate-600 ring-1 ring-slate-300 hover:text-slate-900" title="Reset" aria-label="Reset">
                         <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M16 10a6 6 0 1 1-2-4.47" />
