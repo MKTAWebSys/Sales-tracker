@@ -369,8 +369,12 @@
                         @if (request()->routeIs('caller-mode.*'))
                             <input type="hidden" name="caller_mode" value="1">
                         @endif
-                        <button type="submit" class="rounded-md bg-white/10 px-3 py-2 text-xs font-medium text-white ring-1 ring-white/15 hover:bg-white/15">
-                            Ukoncit hovor
+                        <button type="submit" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-rose-500 text-white ring-1 ring-rose-300/40 hover:bg-rose-400" title="Ukoncit hovor" aria-label="Ukoncit hovor">
+                            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                <path d="M4.5 12.5a9 9 0 0 1 11 0" />
+                                <path d="M6.5 11.5 5 15l2.3 1.1 1.2-2.2" />
+                                <path d="M13.5 11.5 15 15l-2.3 1.1-1.2-2.2" />
+                            </svg>
                         </button>
                     </form>
                 </div>
