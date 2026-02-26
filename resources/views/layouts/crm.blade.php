@@ -330,9 +330,8 @@
     @if ($activeCallBanner && ! $hideActiveCallBanner)
         <a href="{{ route('calls.finish', ['call' => $activeCallBanner, 'caller_mode' => request()->routeIs('caller-mode.*') ? 1 : null]) }}"
            class="fixed bottom-4 right-4 z-50 block w-[min(32rem,calc(100vw-1rem))] rounded-xl border border-slate-700/70 bg-gradient-to-b from-slate-950/95 via-slate-900/95 to-slate-800/95 p-3 text-sm text-white shadow-2xl ring-1 ring-white/10 backdrop-blur hover:from-slate-900/95 hover:to-slate-800/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
-            <div class="flex items-start gap-2">
-                <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2">
+            <div class="grid grid-cols-[minmax(0,1fr)_2.75rem] grid-rows-[auto_auto] items-stretch gap-2">
+                <div class="col-start-1 row-start-1 min-w-0 flex items-center gap-2">
                         <span class="inline-flex h-2 w-2 shrink-0 rounded-full bg-emerald-400"></span>
                         <div class="min-w-0 truncate text-sm font-semibold leading-tight">
                             {{ $activeCallBanner->company?->name ?? 'Bez firmy' }}
@@ -340,21 +339,9 @@
                         <span class="ml-auto shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white ring-1 ring-white/10">
                             <span class="js-active-call-timer" data-called-at="{{ $activeCallBanner->called_at?->toIso8601String() ?? '' }}">00:00</span>
                         </span>
-                        <form method="POST" action="{{ route('calls.end', $activeCallBanner) }}" class="shrink-0" data-row-link-ignore>
-                            @csrf
-                            @if (request()->routeIs('caller-mode.*'))
-                                <input type="hidden" name="caller_mode" value="1">
-                            @endif
-                            <button type="submit" class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-rose-500 text-white ring-1 ring-rose-300/40 hover:bg-rose-400" title="Ukoncit hovor" aria-label="Ukoncit hovor">
-                                <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                                    <path d="M4.5 12.5a9 9 0 0 1 11 0" />
-                                    <path d="M6.5 11.5 5 15l2.3 1.1 1.2-2.2" />
-                                    <path d="M13.5 11.5 15 15l-2.3 1.1-1.2-2.2" />
-                                </svg>
-                            </button>
-                        </form>
-                    </div>
-                    <details class="mt-2 rounded-md border border-white/10 bg-white/5 p-2" data-row-link-ignore onclick="event.stopPropagation();">
+                </div>
+                <div class="col-start-1 row-start-2 min-w-0">
+                    <details class="rounded-md border border-white/10 bg-white/5 p-2" data-row-link-ignore onclick="event.stopPropagation();">
                         <summary class="cursor-pointer select-none text-xs font-medium text-slate-200" onclick="event.preventDefault(); this.parentElement.open = !this.parentElement.open;">
                             Rychla poznamka / detail
                         </summary>
@@ -375,6 +362,21 @@
                             </div>
                         </form>
                     </details>
+                </div>
+                <div class="col-start-2 row-start-1 row-span-2 flex items-stretch justify-end" data-row-link-ignore>
+                    <form method="POST" action="{{ route('calls.end', $activeCallBanner) }}" class="h-full w-full" data-row-link-ignore>
+                        @csrf
+                        @if (request()->routeIs('caller-mode.*'))
+                            <input type="hidden" name="caller_mode" value="1">
+                        @endif
+                        <button type="submit" class="inline-flex h-full w-full items-center justify-center rounded-lg bg-rose-500 text-white ring-1 ring-rose-300/40 hover:bg-rose-400" title="Ukoncit hovor" aria-label="Ukoncit hovor">
+                            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                <path d="M4.5 12.5a9 9 0 0 1 11 0" />
+                                <path d="M6.5 11.5 5 15l2.3 1.1 1.2-2.2" />
+                                <path d="M13.5 11.5 15 15l-2.3 1.1-1.2-2.2" />
+                            </svg>
+                        </button>
+                    </form>
                 </div>
             </div>
         </a>
