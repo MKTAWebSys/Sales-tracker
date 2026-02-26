@@ -84,17 +84,21 @@
     <div class="mb-3 grid gap-2 sm:grid-cols-3">
         <div class="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
             <div class="text-xs text-slate-500">Vybrany den (agenda dole)</div>
-            <div class="mt-0.5 text-xl font-semibold">{{ $counts['total'] }}</div>
-            <div class="text-xs text-slate-500">{{ $calendarDate->format('Y-m-d') }}</div>
+            <div class="mt-0.5 flex flex-wrap items-baseline gap-2">
+                <div class="text-xl font-semibold">{{ $counts['total'] }}</div>
+                <div class="text-xs text-slate-500">{{ $calendarDate->format('Y-m-d') }}</div>
+            </div>
         </div>
         <div class="rounded-xl bg-white p-3 shadow-sm ring-1 ring-blue-200">
             <div class="text-xs text-blue-700">Aktivity v zobrazenem obdobi</div>
-            <div class="mt-0.5 text-xl font-semibold text-blue-800">{{ $rangeCounts['total'] ?? $counts['total'] }}</div>
-            <div class="text-xs text-slate-500">
-                follow-upy + schuzky
+            <div class="mt-0.5 flex flex-wrap items-baseline gap-2">
+                <div class="text-xl font-semibold text-blue-800">{{ $rangeCounts['total'] ?? $counts['total'] }}</div>
+                <div class="text-xs text-slate-500">
+                    follow-upy + schuzky
                 @if (!empty($rangeCounts['doneTotal']))
                     | hotovo {{ $rangeCounts['doneTotal'] }}
                 @endif
+                </div>
             </div>
         </div>
         <div class="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
