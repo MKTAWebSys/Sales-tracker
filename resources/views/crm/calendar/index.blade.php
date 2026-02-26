@@ -25,7 +25,7 @@
     <input type="hidden" name="date" value="{{ $calendarDate->format('Y-m-d') }}">
     <input type="hidden" name="view" value="{{ $viewMode }}">
 
-    <div class="grid gap-3 xl:grid-cols-[18rem_18rem_minmax(24rem,1fr)_5.75rem] xl:items-stretch">
+    <div class="grid gap-3 xl:grid-cols-[18rem_18rem_minmax(28rem,1fr)] xl:items-stretch">
         <div class="rounded-xl bg-white p-2 ring-1 ring-slate-200 h-[5.75rem] flex items-center">
             <div class="inline-flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
                 @foreach (['day' => 'Den', 'week' => 'Tyden', 'month' => 'Mesic'] as $modeValue => $modeLabel)
@@ -54,7 +54,7 @@
         </div>
 
         <div class="rounded-xl bg-white p-2 ring-1 ring-slate-200 h-[5.75rem]">
-                <div class="grid h-full gap-3 {{ $isManager ? 'grid-cols-[minmax(0,13rem)_minmax(0,1fr)]' : 'grid-cols-1' }}">
+                <div class="grid h-full gap-3 {{ $isManager ? 'grid-cols-[minmax(0,13rem)_minmax(0,1fr)_3rem]' : 'grid-cols-[minmax(0,1fr)_3rem]' }}">
                     @if ($isManager)
                         <div class="self-center">
                             <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="w-full rounded-md border-slate-300 py-1.5 text-sm">
@@ -81,17 +81,14 @@
                         <span>Jen overdue</span>
                     </label>
                 </div>
-            </div>
-        </div>
-
-        <div class="rounded-xl bg-white p-2 ring-1 ring-slate-200 h-[5.75rem]">
-            <div class="flex h-full items-center justify-center">
-                <a href="{{ route('calendar.index') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-white text-slate-600 ring-1 ring-slate-300 hover:text-slate-900" title="Reset" aria-label="Reset">
-                    <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M16 10a6 6 0 1 1-2-4.47" />
-                        <path d="M16 4v4h-4" />
-                    </svg>
-                </a>
+                <div class="self-center justify-self-end">
+                    <a href="{{ route('calendar.index') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-white text-slate-600 ring-1 ring-slate-300 hover:text-slate-900" title="Reset" aria-label="Reset">
+                        <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M16 10a6 6 0 1 1-2-4.47" />
+                            <path d="M16 4v4h-4" />
+                        </svg>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
