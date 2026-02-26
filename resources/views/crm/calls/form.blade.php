@@ -122,7 +122,7 @@
             </div>
             @endif
 
-            <div class="{{ $isFinishFlow && $finalizeCall ? 'rounded-xl border border-slate-200 bg-white p-3 shadow-sm ring-1 ring-slate-200 lg:grid lg:grid-cols-[minmax(0,40%)_minmax(0,60%)] lg:gap-4' : 'grid gap-6 sm:grid-cols-2' }}">
+            <div class="{{ $isFinishFlow && $finalizeCall ? 'rounded-xl border border-slate-200 bg-white px-3 pb-3 pt-2 shadow-sm ring-1 ring-slate-200 lg:grid lg:grid-cols-[minmax(0,40%)_minmax(0,60%)] lg:gap-4' : 'grid gap-6 sm:grid-cols-2' }}">
                 @if (! ($isFinishFlow && $finalizeCall))
                     <div>
                         <label for="called_at" class="block text-sm font-medium text-slate-700">{{ $isFinishFlow ? 'Cas startu hovoru' : 'Datum a cas hovoru' }}</label>
@@ -159,7 +159,7 @@
                             'meeting-booked' => 'Schuzka domluvena',
                         ];
                     @endphp
-                    <div class="mt-1.5 grid grid-cols-1 gap-1.5 {{ $isFinishFlow && $finalizeCall ? 'max-w-[25rem]' : 'sm:grid-cols-2' }}">
+                    <div class="mt-1 grid grid-cols-1 gap-2 {{ $isFinishFlow && $finalizeCall ? 'max-w-[25rem]' : 'sm:grid-cols-2' }}">
                         @foreach (($isFinishFlow && $finalizeCall ? ['no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] : ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked']) as $outcome)
                             @php
                                 $isSelectedOutcome = old('outcome', $finishOutcomeDefault) === $outcome;
