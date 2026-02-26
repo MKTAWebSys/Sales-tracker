@@ -54,8 +54,13 @@
         </div>
 
         <div class="rounded-xl bg-white p-3 ring-1 ring-slate-200">
-            <div class="flex h-full min-w-[8.5rem] flex-col justify-end gap-2">
-                <a href="{{ route('calendar.index') }}" class="rounded-md bg-white px-3 py-1.5 text-sm text-slate-600 ring-1 ring-slate-300 hover:text-slate-900">Reset</a>
+            <div class="flex h-full min-w-[3.25rem] items-end justify-end">
+                <a href="{{ route('calendar.index') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-white text-slate-600 ring-1 ring-slate-300 hover:text-slate-900" title="Reset" aria-label="Reset">
+                    <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M16 10a6 6 0 1 1-2-4.47" />
+                        <path d="M16 4v4h-4" />
+                    </svg>
+                </a>
             </div>
         </div>
 
