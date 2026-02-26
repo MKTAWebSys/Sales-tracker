@@ -25,12 +25,12 @@
     <input type="hidden" name="date" value="{{ $calendarDate->format('Y-m-d') }}">
     <input type="hidden" name="view" value="{{ $viewMode }}">
 
-    <div class="grid gap-2 xl:grid-cols-[16rem_14rem_auto] xl:items-stretch xl:justify-start">
-        <div class="rounded-xl bg-white p-1.5 ring-1 ring-slate-200 h-[4.25rem] flex items-center">
-            <div class="inline-flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
+    <div class="grid gap-2 xl:grid-cols-[fit-content(13.5rem)_14rem_auto] xl:items-stretch xl:justify-start">
+        <div class="rounded-xl bg-white px-1.5 py-1 ring-1 ring-slate-200 h-[3.75rem] flex items-center justify-start">
+            <div class="inline-flex rounded-lg bg-slate-100 p-0.5 ring-1 ring-slate-200">
                 @foreach (['day' => 'Den', 'week' => 'Tyden', 'month' => 'Mesic'] as $modeValue => $modeLabel)
                     <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['view' => $modeValue, 'date' => $calendarDate->format('Y-m-d')])) }}"
-                       class="rounded-md px-3 py-1.5 text-sm font-medium transition {{ $viewMode === $modeValue ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900' }}">
+                       class="rounded-md px-3 py-1 text-sm font-medium transition {{ $viewMode === $modeValue ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900' }}">
                         {{ $modeLabel }}
                     </a>
                 @endforeach
