@@ -206,6 +206,7 @@
 
     @php
         $activeCallBanner = null;
+        $hideActiveCallBanner = false;
         if (auth()->check()) {
             $activeCallBanner = \App\Models\Call::query()
                 ->with('company:id,name')
@@ -214,6 +215,14 @@
                 ->whereNull('ended_at')
                 ->latest('called_at')
                 ->first();
+
+            if ($activeCallBanner) {
+                $routeCallParam = request()->route('call');
+                $routeCallId = is_object($routeCallParam) ? ($routeCallParam->id ?? null) : (is_numeric($routeCallParam) ? (int) $routeCallParam : null);
+
+                $hideActiveCallBanner = $routeCallId === $activeCallBanner->id
+                    && (request()->routeIs('calls.show') || request()->routeIs('calls.finish'));
+            }
         }
     @endphp
 
@@ -318,7 +327,7 @@
         </div>
     </div>
 
-    @if ($activeCallBanner)
+    @if ($activeCallBanner && ! $hideActiveCallBanner)
         <div class="fixed bottom-4 right-4 z-50 w-[min(42rem,calc(100vw-2rem))] rounded-xl border border-violet-200 bg-violet-50/95 p-4 text-sm text-violet-900 shadow-xl ring-1 ring-violet-100 backdrop-blur">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
