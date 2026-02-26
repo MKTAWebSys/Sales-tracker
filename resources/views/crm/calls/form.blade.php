@@ -20,7 +20,8 @@
 @extends('layouts.crm', ['title' => $titleText . ' | Call CRM'])
 
 @section('content')
-    @if (! ($isFinishFlow && $finalizeCall))
+    <div class="{{ $isActiveNoteOnlyFinish ? '-mt-3 sm:-mt-4' : '' }}">
+    @if (! ($isFinishFlow && $finalizeCall) && ! $isActiveNoteOnlyFinish)
         <div class="mb-6">
             <h1 class="text-2xl font-semibold">{{ $titleText }}</h1>
             @if ($isFinishFlow)
@@ -345,6 +346,7 @@
             @endif
         </div>
     </form>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
