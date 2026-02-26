@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\CallController;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CallerModeController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FollowUpController;
@@ -17,6 +19,8 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::get('/caller-mode', [CallerModeController::class, 'index'])->name('caller-mode.index');
     Route::post('/dashboard/user-target/{user}', [DashboardController::class, 'updateUserTarget'])->name('dashboard.user-target.update');
     Route::resource('companies', CompanyController::class)->only([
         'index',
@@ -29,6 +33,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/companies/{company}/quick-status', [CompanyController::class, 'quickStatus'])->name('companies.quick-status');
     Route::match(['get', 'post'], '/companies/{company}/quick-defer', [CompanyController::class, 'quickDefer'])->name('companies.quick-defer');
     Route::get('/companies-next/mine', [CompanyController::class, 'nextMine'])->name('companies.next-mine');
+    Route::get('/companies/queue/mine', [CompanyController::class, 'queueMine'])->name('companies.queue.mine');
+    Route::post('/companies/bulk', [CompanyController::class, 'bulk'])->name('companies.bulk');
     Route::resource('calls', CallController::class)->only([
         'index',
         'create',
@@ -38,6 +44,8 @@ Route::middleware('auth')->group(function () {
         'update',
     ]);
     Route::post('/calls/{call}/quick-outcome', [CallController::class, 'quickOutcome'])->name('calls.quick-outcome');
+    Route::post('/calls/{call}/quick-note', [CallController::class, 'quickNote'])->name('calls.quick-note');
+    Route::post('/calls/{call}/end', [CallController::class, 'end'])->name('calls.end');
     Route::match(['get', 'post'], '/companies/{company}/start-call', [CallController::class, 'quickStart'])->name('companies.calls.start');
     Route::get('/calls/{call}/finish', [CallController::class, 'finish'])->name('calls.finish');
     Route::resource('follow-ups', FollowUpController::class)->only([

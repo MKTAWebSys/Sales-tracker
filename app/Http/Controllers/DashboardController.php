@@ -62,7 +62,12 @@ class DashboardController extends Controller
             'viewedUser' => $viewedUser,
             'isViewingOtherUser' => $isViewingOtherUser,
             'myStats' => $viewedUser ? [
-                'companies' => Company::query()->where('assigned_user_id', $viewedUser->id)->count(),
+                'queueCompanies' => Company::query()
+                    ->where('first_caller_user_id', $viewedUser->id)
+                    ->where('status', 'new')
+                    ->whereNull('first_contacted_at')
+                    ->count(),
+                'ownerCompanies' => Company::query()->where('assigned_user_id', $viewedUser->id)->count(),
                 'followUpsOpen' => FollowUp::query()->where('assigned_user_id', $viewedUser->id)->where('status', 'open')->count(),
                 'followUpsOverdue' => FollowUp::query()->where('assigned_user_id', $viewedUser->id)->where('status', 'open')->whereDate('due_at', '<', $today)->count(),
             ] : null,

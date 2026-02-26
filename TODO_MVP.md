@@ -12,34 +12,83 @@ Pracovni plan pro prvni verzi interni webove aplikace `Call CRM MVP`.
   - role `manager` / `caller`
   - `Moje firmy`, `Moje follow-upy`, fronta uzivatele
   - admin prepinac dashboard pohledu na jineho uzivatele
+- Samostatna stranka `Moje fronta` (new firmy k obvolani) + FIFO razeni
+- `Caller mode` (mobilni workflow MVP):
+  - moje dalsi firma
+  - volat (`tel:`)
+  - aktivni hovor / ukonceni hovoru
+  - swipe vlevo/vpravo pro `dalsi` / `odlozit`
 - Call workflow:
   - `Zahajit hovor` z detailu firmy i ze seznamu firem
+  - jen 1 aktivni hovor na uzivatele (guard)
+  - floating panel aktivniho hovoru (timer + quick note + navrat/ukonceni)
+  - quick note behem hovoru (AJAX append s timestampem)
+  - dvoufaze: aktivni hovor (poznamka) -> ukonceni -> vyber vysledku
+  - ukonceni hovoru pres `POST` endpoint (`calls.end`) + `ended_at`
   - dokonceni hovoru s navazujicimi akcemi
-  - `Ukoncit a dalsi firma`
+  - `Ulozit a dalsi` (queue workflow)
   - `Odlozit + dalsi firma`
   - guard proti preskakovani firmy ve stavu `new`
+- Finiš hovoru UX:
+  - recap karta `Hovor ukoncen` (firma, od/do, delka)
+  - vysledek hovoru jako velka tlacitka/chipy
+  - quick callback presety + rychle datum/cas (2 pole) v jednom radku
+  - compact accordion sekce (`Follow-up`, `Schuzka`, `Predani leadu`)
+  - caller-mode finalize je zjednoduseny (ultra-minimal)
+  - stav firmy se meni automaticky podle vysledku hovoru
 - Inline rychle zmeny stavu/vysledku v seznamech:
   - firmy, hovory, follow-upy, predani leadu, schuzky
   - potvrzovaci tlacitko `OK` se zobrazi az po zmene hodnoty
+- Hromadne akce nad firmami (bulk):
+  - prirazeni `first caller` (admin komukoliv, caller sobe)
+  - `Vzít si` / `Odebrat z fronty`
+  - zmena statusu
+  - append poznamky
+  - `Vybrat vse new` na strance
+- Queue model firem:
+  - `first_caller_user_id`
+  - `first_caller_assigned_at`
+  - `first_contacted_at`
 - UI/UX zlepseni:
-  - sticky horni menu
+  - sidebar navigace (seskupene menu)
   - row click do detailu
   - toast notifikace vlevo dole
   - datumova pole otevrou picker klikem do celeho pole
   - timeline firmy: zvyraznena posledni aktivita + rozbaleni delsi poznamky
+  - web-safe hapticky/akusticky feedback po ulozeni (toast / AJAX quick note)
 - Admin sprava uzivatelu (samostatne menu `Uzivatele`):
   - pridat / upravit / smazat
   - verejna registrace vypnuta
-- Cile obvolani na uzivateli (`pocet firem` + `termin`) a zobrazeni v dashboardu / firmach
+- Cile obvolani na uzivateli (`pocet firem` + `termin`) a zobrazeni ve fronte/firmach
+- Dashboard cleanup:
+  - odstraneno `Admin nastaveni cile obvolani` z dashboardu
+  - prepinac pohledu uzivatele presunut do headeru dashboardu
+- Kalendar:
+  - `Den / Tyden / Mesic` view
+  - denni agenda follow-upu + schuzek
+  - overdue filtr
+  - barevne odliseni urgence a pretizeni dnu (8+)
+  - tydenni souhrn (hotovo / neudelano)
+  - klik z mesice -> den view
+  - compact header ovladani (bez velkych boxu, auto-refresh filtru)
+  - `Mesic` view jako rolling okno 5 tydnu kolem vybraneho dne (`-2/+2`)
+  - opraveny filtr uzivatele (ma prioritu pred `Jen moje agenda`)
 - Demo seedery (vcetne dat pro `petr.zvelebil@awebsys.cz`)
 
 ### Co melo nasledovat (dalsi rozumne kroky)
 
+- Presunout spravu `cilu obvolani` pouze do `Sprava > Uzivatele` UI (pokud tam chybi edit pole/sekce)
 - Doladit inline edit i pro dalsi pole (napr. prirazeny uzivatel u follow-upu/firem)
 - Dodelat / zjemnit ceske popisky v inline selectech (misto internich enum hodnot)
-- Pridat rychle outcome akce pro call queue (napr. `Nezastizen + dalsi firma`)
-- Dopsat testy pro quick actions / queue workflow / admin user management
-- Uklidit backup `routes/auth.php.bak` (lokalni pomocny soubor, necommitovat)
+- Rychle outcome akce pro call queue (napr. `Nezastizen + dalsi firma` primo z caller mode)
+- Dotahnout mobile caller finalize jako 2-krok wizard (optional)
+- Dopsat testy pro quick actions / queue workflow / single active call / call finalize flow
+- Outlook/Google sync priprava:
+  - external event IDs/sloupce pro `follow_ups` a `meetings`
+  - `.ics` export den/tyden (viz bod 5)
+- Kalendar UX:
+  - doladit finalni layout headeru (spacing / zarovnani) podle realneho pouziti na malem monitoru
+- Uklidit lokalni pomocne/backup soubory (pokud se objevi)
 
 ## 1) Data model
 
@@ -99,6 +148,7 @@ Pracovni plan pro prvni verzi interni webove aplikace `Call CRM MVP`.
   - import
 - Reseni duplicit (firma podle ICO / nazvu)
 - Log importu a chybove radky
+- Pozdeji: export `.ics` (den/tyden) jako prvni krok k Outlook/Google integraci kalendare
 - Omezit scope MVP: implementovat az po stabilnim CRUD
 
 ## Poznamky
