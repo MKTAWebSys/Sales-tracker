@@ -33,13 +33,15 @@
                 <div>
                     <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">Hovor ukoncen</div>
                     <div class="mt-0.5 text-base font-semibold text-white/95">{{ $company?->name ?? 'Bez firmy' }}</div>
-                    <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-300">
+                </div>
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-300">
                         <span>Od: {{ $startAt?->format('Y-m-d H:i:s') ?? '-' }}</span>
                         <span>Do: {{ $endAt?->format('Y-m-d H:i:s') ?? '-' }}</span>
                     </div>
-                </div>
-                <div class="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold tabular-nums text-white ring-1 ring-white/10">
-                    {{ $durationMinutes !== null ? $durationMinutes.' min' : '-' }}
+                    <div class="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold tabular-nums text-white ring-1 ring-white/10">
+                        {{ $durationMinutes !== null ? $durationMinutes.' min' : '-' }}
+                    </div>
                 </div>
             </div>
         </div>
