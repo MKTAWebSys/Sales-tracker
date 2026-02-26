@@ -35,7 +35,7 @@
             @endforeach
         </div>
 
-        <div class="inline-flex h-10 items-center gap-2">
+        <div class="inline-flex h-10 items-center gap-2 rounded-lg bg-white px-2 py-1 ring-1 ring-slate-200">
             <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $prevDate])) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Predchozi" aria-label="Predchozi">
                 <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12.5 4.5 7 10l5.5 5.5" />
@@ -49,7 +49,7 @@
             </a>
         </div>
 
-        <div class="inline-flex h-10 items-center gap-2 rounded-lg bg-white px-2 py-1 ring-1 ring-slate-200">
+        <div class="ml-auto inline-flex h-10 items-center gap-2 rounded-lg bg-white px-2 py-1 ring-1 ring-slate-200">
             @if ($isManager)
                 <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-8 min-w-[12rem] rounded-md border-slate-300 py-0 text-sm">
                     <option value="">Uzivatel: Vse</option>
