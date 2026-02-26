@@ -63,6 +63,7 @@ Pracovni plan pro prvni verzi interni webove aplikace `Call CRM MVP`.
 - Dashboard cleanup:
   - odstraneno `Admin nastaveni cile obvolani` z dashboardu
   - prepinac pohledu uzivatele presunut do headeru dashboardu
+- `Predani leadu` sekce schovana z hlavni navigace/dashboardu (modul zatim ponechan v kodu)
 - Kalendar:
   - `Den / Tyden / Mesic` view
   - denni agenda follow-upu + schuzek
@@ -88,6 +89,9 @@ Pracovni plan pro prvni verzi interni webove aplikace `Call CRM MVP`.
   - `.ics` export den/tyden (viz bod 5)
 - Kalendar UX:
   - doladit finalni layout headeru (spacing / zarovnani) podle realneho pouziti na malem monitoru
+- `Predani leadu` modul:
+  - overit v realnem workflow, zda je potreba samostatny seznam
+  - pokud ne, pozdeji odstranit samostatny modul/sekci a ponechat jen procesni krok v hovoru
 - Uklidit lokalni pomocne/backup soubory (pokud se objevi)
 
 ## 1) Data model

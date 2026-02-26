@@ -74,10 +74,6 @@
             <p class="text-xs text-rose-700">Po terminu (globalne)</p>
             <p class="mt-2 text-2xl font-semibold text-rose-800">{{ $stats['followUpsOverdue'] }}</p>
         </a>
-        <a href="{{ route('lead-transfers.index') }}" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50">
-            <p class="text-xs text-slate-500">Predani leadu</p>
-            <p class="mt-2 text-2xl font-semibold">{{ $stats['leadTransfers'] }}</p>
-        </a>
         <a href="{{ route('meetings.index', ['status' => 'planned']) }}" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50">
             <p class="text-xs text-slate-500">Planovane schuzky</p>
             <p class="mt-2 text-2xl font-semibold">{{ $stats['meetingsPlanned'] }}</p>

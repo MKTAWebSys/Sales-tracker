@@ -63,4 +63,51 @@
     <div class="mt-4">
         {{ $companies->links() }}
     </div>
+
+    <div class="mt-8 grid gap-6 lg:grid-cols-2">
+        <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <div class="mb-3 flex items-center justify-between gap-3">
+                <h2 class="text-lg font-semibold">Moje follow-upy</h2>
+                <a href="{{ route('follow-ups.index', ['mine' => 1, 'status' => 'open']) }}" class="text-sm text-slate-600 underline">Otevrit vse</a>
+            </div>
+            <ul class="space-y-2 text-sm">
+                @forelse ($followUps as $followUp)
+                    <li class="rounded-lg border border-slate-200 p-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="font-medium">{{ $followUp->company?->name ?? '-' }}</div>
+                            <a href="{{ route('follow-ups.show', $followUp) }}" class="text-xs text-slate-600 underline">Detail</a>
+                        </div>
+                        <div class="mt-1 text-slate-500">{{ $followUp->due_at?->format('Y-m-d H:i') ?? '-' }}</div>
+                    </li>
+                @empty
+                    <li class="text-slate-500">Zadne otevrene follow-upy.</li>
+                @endforelse
+            </ul>
+        </div>
+
+        <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <div class="mb-3 flex items-center justify-between gap-3">
+                <h2 class="text-lg font-semibold">Moje schuzky</h2>
+                <a href="{{ route('meetings.index', ['status' => 'planned']) }}" class="text-sm text-slate-600 underline">Otevrit vse</a>
+            </div>
+            <ul class="space-y-2 text-sm">
+                @forelse ($meetings as $meeting)
+                    <li class="rounded-lg border border-slate-200 p-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="font-medium">{{ $meeting->company?->name ?? '-' }}</div>
+                            <a href="{{ route('meetings.show', $meeting) }}" class="text-xs text-slate-600 underline">Detail</a>
+                        </div>
+                        <div class="mt-1 text-slate-500">
+                            {{ $meeting->scheduled_at?->format('Y-m-d H:i') ?? '-' }}
+                            @if($meeting->status)
+                                | {{ $meeting->status }}
+                            @endif
+                        </div>
+                    </li>
+                @empty
+                    <li class="text-slate-500">Zadne planovane/potvrzene schuzky.</li>
+                @endforelse
+            </ul>
+        </div>
+    </div>
 @endsection

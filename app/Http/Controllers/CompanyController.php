@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\FollowUp;
+use App\Models\Meeting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -255,8 +256,26 @@ class CompanyController extends Controller
             ->paginate(25)
             ->withQueryString();
 
+        $followUps = FollowUp::query()
+            ->with('company')
+            ->where('assigned_user_id', $user->id)
+            ->where('status', 'open')
+            ->orderBy('due_at')
+            ->limit(8)
+            ->get();
+
+        $meetings = Meeting::query()
+            ->with('company')
+            ->whereIn('status', ['planned', 'confirmed'])
+            ->whereHas('call', fn ($query) => $query->where('caller_id', $user->id))
+            ->orderBy('scheduled_at')
+            ->limit(8)
+            ->get();
+
         return view('crm.companies.queue-mine', [
             'companies' => $companies,
+            'followUps' => $followUps,
+            'meetings' => $meetings,
         ]);
     }
 

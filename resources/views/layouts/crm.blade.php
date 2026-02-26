@@ -181,7 +181,6 @@
                     ['Kalendar', 'calendar.index', 'calendar'],
                     ['Hovory', 'calls.index', 'calls'],
                     ['Follow-upy', 'follow-ups.index', 'followups'],
-                    ['Predani leadu', 'lead-transfers.index', 'transfers'],
                     ['Schuzky', 'meetings.index', 'meetings'],
                 ],
             ],
