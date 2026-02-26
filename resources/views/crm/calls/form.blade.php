@@ -119,7 +119,7 @@
             </div>
             @endif
 
-            <div class="{{ $isFinishFlow && $finalizeCall ? '' : 'grid gap-6 sm:grid-cols-2' }}">
+            <div class="{{ $isFinishFlow && $finalizeCall ? 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-200 lg:grid lg:grid-cols-2 lg:gap-5' : 'grid gap-6 sm:grid-cols-2' }}">
                 @if (! ($isFinishFlow && $finalizeCall))
                     <div>
                         <label for="called_at" class="block text-sm font-medium text-slate-700">{{ $isFinishFlow ? 'Cas startu hovoru' : 'Datum a cas hovoru' }}</label>
@@ -129,7 +129,7 @@
                         @enderror
                     </div>
                 @endif
-                <div>
+                <div class="{{ $isFinishFlow && $finalizeCall ? 'lg:pr-1' : '' }}">
                     <label class="block text-sm font-medium text-slate-700">{{ $isFinishFlow && $finalizeCall ? 'Vysledek hovoru' : 'Vysledek' }}</label>
                     <select id="outcome" name="outcome" class="js-call-outcome sr-only">
                         @foreach (($isFinishFlow && $finalizeCall ? ['no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] : ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked']) as $outcome)
@@ -156,7 +156,7 @@
                             'meeting-booked' => 'Schuzka domluvena',
                         ];
                     @endphp
-                    <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div class="mt-2 grid grid-cols-1 gap-2 {{ $isFinishFlow && $finalizeCall ? '' : 'sm:grid-cols-2' }}">
                         @foreach (($isFinishFlow && $finalizeCall ? ['no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] : ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked']) as $outcome)
                             @php
                                 $isSelectedOutcome = old('outcome', $finishOutcomeDefault) === $outcome;
@@ -170,7 +170,7 @@
                             @endphp
                             <button
                                 type="button"
-                                class="js-call-outcome-chip rounded-xl border px-3 py-3 text-left text-sm font-medium transition {{ $isSelectedOutcome ? 'ring-2 ' : '' }} {{ $chipTone === 'emerald' ? ($isSelectedOutcome ? 'border-emerald-300 bg-emerald-50 text-emerald-900 ring-emerald-300' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50') : '' }} {{ $chipTone === 'blue' ? ($isSelectedOutcome ? 'border-blue-300 bg-blue-50 text-blue-900 ring-blue-300' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50') : '' }} {{ $chipTone === 'amber' ? ($isSelectedOutcome ? 'border-amber-300 bg-amber-50 text-amber-900 ring-amber-300' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50') : '' }} {{ $chipTone === 'rose' ? ($isSelectedOutcome ? 'border-rose-300 bg-rose-50 text-rose-900 ring-rose-300' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50') : '' }} {{ $chipTone === 'slate' ? ($isSelectedOutcome ? 'border-slate-300 bg-slate-100 text-slate-900 ring-slate-300' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50') : '' }}"
+                                class="js-call-outcome-chip rounded-xl border text-sm font-medium transition {{ $isFinishFlow && $finalizeCall ? 'px-3 py-2 text-center' : 'px-3 py-3 text-left' }} {{ $isSelectedOutcome ? 'ring-2 ' : '' }} {{ $chipTone === 'emerald' ? ($isSelectedOutcome ? 'border-emerald-300 bg-emerald-100 text-emerald-900 ring-emerald-300' : ($isFinishFlow && $finalizeCall ? 'border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'blue' ? ($isSelectedOutcome ? 'border-blue-300 bg-blue-100 text-blue-900 ring-blue-300' : ($isFinishFlow && $finalizeCall ? 'border-blue-200 bg-blue-50 text-blue-900 hover:bg-blue-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'amber' ? ($isSelectedOutcome ? 'border-amber-300 bg-amber-100 text-amber-900 ring-amber-300' : ($isFinishFlow && $finalizeCall ? 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'rose' ? ($isSelectedOutcome ? 'border-rose-300 bg-rose-100 text-rose-900 ring-rose-300' : ($isFinishFlow && $finalizeCall ? 'border-rose-200 bg-rose-50 text-rose-900 hover:bg-rose-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'slate' ? ($isSelectedOutcome ? 'border-slate-300 bg-slate-200 text-slate-900 ring-slate-300' : ($isFinishFlow && $finalizeCall ? 'border-slate-200 bg-slate-100 text-slate-900 hover:bg-slate-200' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }}"
                                 data-outcome-value="{{ $outcome }}"
                                 aria-pressed="{{ $isSelectedOutcome ? 'true' : 'false' }}"
                             >
@@ -182,10 +182,21 @@
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
+
+                @if ($isFinishFlow && $finalizeCall)
+                    <div class="mt-4 lg:mt-0">
+                        <label for="summary" class="block text-sm font-medium text-slate-700">Poznamka / shrnuti hovoru</label>
+                        <textarea id="summary" name="summary" rows="6" class="mt-1 w-full rounded-md border-slate-300" autofocus>{{ old('summary', $call->summary) }}</textarea>
+                        <p class="mt-1 text-xs text-slate-500">Poznamku muzes psat prubezne behem hovoru. Dalsi kroky se jen prizpusobi podle vysledku.</p>
+                        @error('summary')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                @endif
             </div>
         @endif
 
-        @if ($isFinishFlow)
+        @if ($isFinishFlow && ! $finalizeCall)
             <div>
                 <label for="summary" class="block text-sm font-medium text-slate-700">Poznamka / shrnuti hovoru</label>
                 <textarea id="summary" name="summary" rows="{{ $isActiveNoteOnlyFinish ? '10' : '6' }}" class="mt-1 w-full rounded-md border-slate-300" autofocus>{{ old('summary', $call->summary) }}</textarea>
