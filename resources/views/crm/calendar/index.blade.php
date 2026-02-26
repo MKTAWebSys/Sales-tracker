@@ -25,8 +25,8 @@
     <input type="hidden" name="date" value="{{ $calendarDate->format('Y-m-d') }}">
     <input type="hidden" name="view" value="{{ $viewMode }}">
 
-    <div class="grid gap-3 xl:grid-cols-[18rem_18rem_auto] xl:items-stretch xl:justify-start">
-        <div class="rounded-xl bg-white p-2 ring-1 ring-slate-200 h-[5.75rem] flex items-center">
+    <div class="grid gap-2 xl:grid-cols-[16rem_14rem_auto] xl:items-stretch xl:justify-start">
+        <div class="rounded-xl bg-white p-1.5 ring-1 ring-slate-200 h-[4.75rem] flex items-center">
             <div class="inline-flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
                 @foreach (['day' => 'Den', 'week' => 'Tyden', 'month' => 'Mesic'] as $modeValue => $modeLabel)
                     <a href="{{ route('calendar.index', array_merge(request()->except('page'), ['view' => $modeValue, 'date' => $calendarDate->format('Y-m-d')])) }}"
@@ -37,7 +37,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl bg-white p-2 ring-1 ring-slate-200 h-[5.75rem] xl:justify-self-start">
+        <div class="rounded-xl bg-white p-1.5 ring-1 ring-slate-200 h-[4.75rem] xl:justify-self-start">
             <div class="flex h-full flex-wrap items-center gap-2 text-sm">
                 <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $prevDate])) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Predchozi" aria-label="Predchozi">
                     <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -53,8 +53,8 @@
             </div>
         </div>
 
-        <div class="rounded-xl bg-white p-2 ring-1 ring-slate-200 h-[5.75rem]">
-                <div class="grid h-full gap-3 {{ $isManager ? 'grid-cols-[minmax(0,13rem)_minmax(0,1fr)_3rem]' : 'grid-cols-[minmax(0,1fr)_3rem]' }}">
+        <div class="rounded-xl bg-white p-1.5 ring-1 ring-slate-200 h-[4.75rem]">
+                <div class="grid h-full gap-2 {{ $isManager ? 'grid-cols-[minmax(0,12rem)_minmax(0,1fr)_3rem]' : 'grid-cols-[minmax(0,1fr)_3rem]' }}">
                     @if ($isManager)
                         <div class="self-center">
                             <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="w-full rounded-md border-slate-300 py-1.5 text-sm">
@@ -65,9 +65,9 @@
                             </select>
                         </div>
                     @endif
-                    <div class="space-y-1.5 self-center">
+                    <div class="space-y-1 self-center">
                     @if ($isManager)
-                        <label class="inline-flex items-center gap-2 text-sm text-slate-700 whitespace-nowrap">
+                        <label class="inline-flex items-center gap-1.5 text-sm text-slate-700 whitespace-nowrap">
                             <input type="hidden" name="mine" value="0">
                             <input type="checkbox" name="mine" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-4 w-4 rounded border-slate-300" @checked(($filters['mine'] ?? '1') === '1')>
                             <span>Jen moje agenda</span>
@@ -76,7 +76,7 @@
                         <input type="hidden" name="mine" value="1">
                         <div class="text-xs text-slate-500 whitespace-nowrap">Jen vase agenda</div>
                     @endif
-                    <label class="inline-flex items-center gap-2 text-sm text-slate-700 whitespace-nowrap">
+                    <label class="inline-flex items-center gap-1.5 text-sm text-slate-700 whitespace-nowrap">
                         <input type="checkbox" name="overdue_only" value="1" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-4 w-4 rounded border-slate-300" @checked(!empty($filters['overdue_only']))>
                         <span>Jen overdue</span>
                     </label>
