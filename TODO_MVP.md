@@ -114,6 +114,17 @@ Pracovni plan pro prvni verzi interni webove aplikace `Call CRM MVP`.
   - telefony jsou klikaci jako samostatne hodnoty (ne jeden retezec)
   - odstranen horni quick-call button v detailu firmy
   - company kontakty rozsirene pro prakticke volani na konkretni cisla
+- Deal atribuce (caller -> deal) - doplnit robustni evidenci:
+  - pridat do `companies` sloupce `deal_closed_at` a `deal_closed_by_user_id`
+  - pri zmene stavu firmy na `deal` ulozit kdo/ kdy deal uzavrel
+  - ponechat i stavajici metriku "sourced by first caller" (kdo prinesl prvni kontakt)
+  - doplnit druhou metriku "closed by owner" (kdo deal finalne uzavrel)
+  - v dashboardu zobrazovat obe metriky oddelene, aby se nemichal sourcing a closing
+  - bonus logika pro callera: deal se musi zapocitat callerovi podle `first call` i kdyz se uzavre az po vice mesicich (napr. +6 mesicu)
+  - pridat report "deal conversion lag" (cas od first call do deal close) a filtrovani podle:
+    - mesic prvniho kontaktu (sourcing mesic)
+    - mesic uzavreni dealu (closing mesic)
+  - doplnit KPI "vyplacitelne bonusy calleru" nezavisle na tom, jestli deal spadl do stejneho mesice jako first call
 
 ## 1) Data model
 
