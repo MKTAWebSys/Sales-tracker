@@ -32,14 +32,14 @@ class DemoCrmSeeder extends Seeder
         })->values();
 
         $companies = collect([
-            ['name' => 'Alfa Stroj s.r.o.', 'status' => 'contacted', 'ico' => '28100412', 'website' => 'https://www.alfastroj.cz'],
+            ['name' => 'Alfa Stroj s.r.o.', 'status' => 'follow-up', 'ico' => '28100412', 'website' => 'https://www.alfastroj.cz'],
             ['name' => 'Beta Logistics a.s.', 'status' => 'follow-up', 'ico' => '45211873', 'website' => 'https://www.betalogistics.cz'],
-            ['name' => 'Clever Energy s.r.o.', 'status' => 'qualified', 'ico' => '27340188', 'website' => 'https://www.cleverenergy.cz'],
+            ['name' => 'Clever Energy s.r.o.', 'status' => 'deal', 'ico' => '27340188', 'website' => 'https://www.cleverenergy.cz'],
             ['name' => 'Delta Facility Group', 'status' => 'new', 'ico' => null, 'website' => 'https://www.deltafacility.example'],
-            ['name' => 'EkoServis Morava', 'status' => 'contacted', 'ico' => '60455290', 'website' => null],
+            ['name' => 'EkoServis Morava', 'status' => 'follow-up', 'ico' => '60455290', 'website' => null],
             ['name' => 'Futura Retail CZ', 'status' => 'lost', 'ico' => '29133714', 'website' => 'https://www.futuraretail.cz'],
             ['name' => 'Gama Tech Systems', 'status' => 'follow-up', 'ico' => '06751234', 'website' => 'https://www.gamatech.example'],
-            ['name' => 'Helios Industry', 'status' => 'qualified', 'ico' => '48392011', 'website' => null],
+            ['name' => 'Helios Industry', 'status' => 'deal', 'ico' => '48392011', 'website' => null],
         ])->map(function (array $companyData, int $idx) use ($users) {
             return Company::query()->create([
                 'name' => $companyData['name'],

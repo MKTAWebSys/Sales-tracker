@@ -39,7 +39,20 @@
         <div class="grid gap-6 sm:grid-cols-3">
             <div>
                 <label for="scheduled_at" class="block text-sm font-medium text-slate-700">Termín</label>
-                <input id="scheduled_at" name="scheduled_at" type="datetime-local" required value="{{ old('scheduled_at', optional($meeting->scheduled_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
+                <input
+                    id="scheduled_at"
+                    name="scheduled_at"
+                    type="datetime-local"
+                    required
+                    value="{{ old('scheduled_at', optional($meeting->scheduled_at)->format('Y-m-d\\TH:i')) }}"
+                    class="sr-only js-datetime-main"
+                    data-split-date="scheduled_at_date"
+                    data-split-time="scheduled_at_time"
+                >
+                <div class="mt-1 flex items-center gap-2 rounded-md bg-white/70 px-2 py-1 ring-1 ring-slate-200">
+                    <input id="scheduled_at_date" type="date" required class="h-9 rounded-md border-slate-300 text-sm">
+                    <input id="scheduled_at_time" type="time" required step="60" class="h-9 w-32 rounded-md border-slate-300 text-sm">
+                </div>
                 @error('scheduled_at') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
             <div>
@@ -74,3 +87,4 @@
         </div>
     </form>
 @endsection
+

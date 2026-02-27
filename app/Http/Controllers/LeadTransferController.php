@@ -16,9 +16,21 @@ class LeadTransferController extends Controller
 
     public function index(Request $request): View
     {
+        $user = $request->user();
         $query = LeadTransfer::query()
             ->with(['company', 'call', 'fromUser', 'toUser'])
             ->latest('transferred_at');
+
+        if ($user && ! $user->isManager()) {
+            $query->where(function ($subQuery) use ($user) {
+                $subQuery
+                    ->where('from_user_id', $user->id)
+                    ->orWhere('to_user_id', $user->id)
+                    ->orWhereHas('company', fn ($q) => $q
+                        ->where('assigned_user_id', $user->id)
+                        ->orWhere('first_caller_user_id', $user->id));
+            });
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->string('status'));
@@ -81,6 +93,8 @@ class LeadTransferController extends Controller
 
     public function show(LeadTransfer $leadTransfer): View
     {
+        $this->ensureCanAccessLeadTransfer(request()->user(), $leadTransfer);
+
         $leadTransfer->load(['company', 'call.company', 'fromUser', 'toUser']);
 
         return view('crm.lead-transfers.show', compact('leadTransfer'));
@@ -88,6 +102,8 @@ class LeadTransferController extends Controller
 
     public function edit(LeadTransfer $leadTransfer): View
     {
+        $this->ensureCanAccessLeadTransfer(request()->user(), $leadTransfer);
+
         return view('crm.lead-transfers.form', [
             'leadTransfer' => $leadTransfer,
             'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
@@ -98,6 +114,8 @@ class LeadTransferController extends Controller
 
     public function update(Request $request, LeadTransfer $leadTransfer): RedirectResponse
     {
+        $this->ensureCanAccessLeadTransfer($request->user(), $leadTransfer);
+
         $leadTransfer->update($this->validateLeadTransfer($request));
 
         return redirect()
@@ -107,6 +125,8 @@ class LeadTransferController extends Controller
 
     public function quickStatus(Request $request, LeadTransfer $leadTransfer): RedirectResponse
     {
+        $this->ensureCanAccessLeadTransfer($request->user(), $leadTransfer);
+
         $data = $request->validate([
             'status' => ['required', 'in:'.implode(',', self::QUICK_STATUSES)],
         ]);
@@ -131,5 +151,24 @@ class LeadTransferController extends Controller
             'status' => ['required', 'string', 'max:50'],
             'note' => ['nullable', 'string'],
         ]);
+    }
+
+    private function ensureCanAccessLeadTransfer(?User $user, LeadTransfer $leadTransfer): void
+    {
+        if (! $user) {
+            abort(401);
+        }
+
+        if ($user->isManager()) {
+            return;
+        }
+
+        $leadTransfer->loadMissing('company:id,assigned_user_id,first_caller_user_id');
+        $allowed = ((int) ($leadTransfer->from_user_id ?? 0) === (int) $user->id)
+            || ((int) ($leadTransfer->to_user_id ?? 0) === (int) $user->id)
+            || ((int) ($leadTransfer->company?->assigned_user_id ?? 0) === (int) $user->id)
+            || ((int) ($leadTransfer->company?->first_caller_user_id ?? 0) === (int) $user->id);
+
+        abort_unless($allowed, 403);
     }
 }

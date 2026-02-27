@@ -43,8 +43,8 @@ class DemoPetrZvelebilSeeder extends Seeder
 
         $companySpecs = [
             ['name' => 'Awebsys Demo Lead Alpha', 'status' => 'follow-up', 'ico' => '10000001', 'website' => 'https://alpha.demo.example'],
-            ['name' => 'Awebsys Demo Lead Beta', 'status' => 'qualified', 'ico' => '10000002', 'website' => 'https://beta.demo.example'],
-            ['name' => 'Awebsys Demo Lead Gamma', 'status' => 'contacted', 'ico' => '10000003', 'website' => null],
+            ['name' => 'Awebsys Demo Lead Beta', 'status' => 'deal', 'ico' => '10000002', 'website' => 'https://beta.demo.example'],
+            ['name' => 'Awebsys Demo Lead Gamma', 'status' => 'follow-up', 'ico' => '10000003', 'website' => null],
             ['name' => 'Awebsys Demo Lead Delta', 'status' => 'new', 'ico' => '10000004', 'website' => null],
         ];
 
@@ -133,9 +133,9 @@ class DemoPetrZvelebilSeeder extends Seeder
             ['name' => 'Awebsys Dashboard Today 1', 'status' => 'follow-up'],
             ['name' => 'Awebsys Dashboard Today 2', 'status' => 'follow-up'],
             ['name' => 'Awebsys Dashboard Overdue 1', 'status' => 'follow-up'],
-            ['name' => 'Awebsys Dashboard Overdue 2', 'status' => 'contacted'],
-            ['name' => 'Awebsys Dashboard Pending Call', 'status' => 'contacted'],
-            ['name' => 'Awebsys Dashboard Meeting Planned', 'status' => 'qualified'],
+            ['name' => 'Awebsys Dashboard Overdue 2', 'status' => 'follow-up'],
+            ['name' => 'Awebsys Dashboard Pending Call', 'status' => 'follow-up'],
+            ['name' => 'Awebsys Dashboard Meeting Planned', 'status' => 'deal'],
         ])->map(function (array $spec) use ($petr) {
             return Company::query()->firstOrCreate(
                 ['name' => $spec['name']],

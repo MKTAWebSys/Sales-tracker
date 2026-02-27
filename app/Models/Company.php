@@ -14,8 +14,13 @@ class Company extends Model
     protected $fillable = [
         'name',
         'ico',
+        'turnover',
+        'nace',
+        'address',
+        'region',
         'website',
         'contact_person',
+        'email',
         'phone',
         'status',
         'notes',
@@ -61,6 +66,11 @@ class Company extends Model
     public function meetings(): HasMany
     {
         return $this->hasMany(Meeting::class);
+    }
+
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(CompanyContact::class);
     }
 
     public function scopeNewUncontacted($query)

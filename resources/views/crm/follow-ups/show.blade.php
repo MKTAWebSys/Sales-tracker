@@ -10,7 +10,7 @@
         </div>
         <div class="flex items-center gap-2">
             <a href="{{ route('follow-ups.edit', $followUp) }}" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Upravit</a>
-            <a href="{{ route('follow-ups.index') }}" class="rounded-md bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Zpět</a>
+            <a href="{{ route('companies.queue.mine') }}" class="rounded-md bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Zpet do fronty</a>
         </div>
     </div>
 
@@ -30,3 +30,4 @@
         </div>
     </div>
 @endsection
+

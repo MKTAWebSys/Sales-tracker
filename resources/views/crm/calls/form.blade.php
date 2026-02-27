@@ -24,8 +24,11 @@
         @php
             $startAt = old('called_at') ? \Illuminate\Support\Carbon::parse(old('called_at')) : $call->called_at;
             $endAt = old('ended_at') ? \Illuminate\Support\Carbon::parse(old('ended_at')) : $call->ended_at;
-            $durationMinutes = ($startAt && $endAt && $endAt->greaterThanOrEqualTo($startAt))
-                ? $startAt->diffInMinutes($endAt)
+            $durationSeconds = ($startAt && $endAt && $endAt->greaterThanOrEqualTo($startAt))
+                ? $startAt->diffInSeconds($endAt)
+                : null;
+            $durationFormatted = $durationSeconds !== null
+                ? sprintf('%02d:%02d', intdiv($durationSeconds, 60), $durationSeconds % 60)
                 : null;
         @endphp
         <div class="mb-3 rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 p-3 text-white shadow-sm">
@@ -40,7 +43,7 @@
                         <span>Do: {{ $endAt?->format('Y-m-d H:i:s') ?? '-' }}</span>
                     </div>
                     <div class="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold tabular-nums text-white ring-1 ring-white/10">
-                        {{ $durationMinutes !== null ? $durationMinutes.' min' : '-' }}
+                        {{ $durationFormatted ?? '-' }}
                     </div>
                 </div>
             </div>
@@ -126,17 +129,31 @@
             </div>
             @endif
 
-            <div class="{{ $isFinishFlow && $finalizeCall ? 'rounded-xl border border-slate-200 bg-white px-3 pb-3 pt-2 shadow-sm ring-1 ring-slate-200 lg:grid lg:grid-cols-[minmax(0,40%)_minmax(0,60%)] lg:gap-4' : 'grid gap-6 sm:grid-cols-2' }}">
+            <div class="{{ $isFinishFlow && $finalizeCall ? 'rounded-xl border border-slate-200 bg-white p-3 shadow-sm ring-1 ring-slate-200 lg:grid lg:grid-cols-[18rem_20rem_minmax(0,1fr)] lg:items-stretch lg:gap-3' : 'grid gap-6 sm:grid-cols-2' }}">
                 @if (! ($isFinishFlow && $finalizeCall))
                     <div>
                         <label for="called_at" class="block text-sm font-medium text-slate-700">{{ $isFinishFlow ? 'Cas startu hovoru' : 'Datum a cas hovoru' }}</label>
-                        <input id="called_at" name="called_at" type="datetime-local" required value="{{ old('called_at', optional($call->called_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300" @readonly($isFinishFlow)>
+                        <input
+                            id="called_at"
+                            name="called_at"
+                            type="datetime-local"
+                            required
+                            value="{{ old('called_at', optional($call->called_at)->format('Y-m-d\\TH:i')) }}"
+                            class="sr-only js-datetime-main"
+                            data-split-date="called_at_date"
+                            data-split-time="called_at_time"
+                            @readonly($isFinishFlow)
+                        >
+                        <div class="mt-1 flex items-center gap-2">
+                            <input id="called_at_date" type="date" required class="h-9 rounded-md border-slate-300 text-sm" @readonly($isFinishFlow)>
+                            <input id="called_at_time" type="time" required step="60" class="h-9 w-32 rounded-md border-slate-300 text-sm" @readonly($isFinishFlow)>
+                        </div>
                         @error('called_at')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
                 @endif
-                <div class="{{ $isFinishFlow && $finalizeCall ? 'lg:pr-1' : '' }}">
+                <div class="{{ $isFinishFlow && $finalizeCall ? 'flex h-full min-h-[17rem] flex-col' : '' }}">
                     <label class="block text-sm font-medium text-slate-700">{{ $isFinishFlow && $finalizeCall ? 'Vysledek hovoru' : 'Vysledek' }}</label>
                     <select id="outcome" name="outcome" class="js-call-outcome sr-only">
                         @foreach (($isFinishFlow && $finalizeCall ? ['no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] : ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked']) as $outcome)
@@ -163,7 +180,7 @@
                             'meeting-booked' => 'Schuzka domluvena',
                         ];
                     @endphp
-                    <div class="mt-1 grid grid-cols-1 gap-2 {{ $isFinishFlow && $finalizeCall ? 'max-w-[25rem]' : 'sm:grid-cols-2' }}">
+                    <div class="mt-1 grid grid-cols-1 gap-2 {{ $isFinishFlow && $finalizeCall ? 'flex-1 grid-rows-5' : 'sm:grid-cols-2' }}">
                         @foreach (($isFinishFlow && $finalizeCall ? ['no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'] : ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked']) as $outcome)
                             @php
                                 $isSelectedOutcome = old('outcome', $finishOutcomeDefault) === $outcome;
@@ -177,7 +194,7 @@
                             @endphp
                             <button
                                 type="button"
-                                class="js-call-outcome-chip rounded-xl border text-sm font-medium transition {{ $isFinishFlow && $finalizeCall ? 'px-3 py-1 text-center' : 'px-3 py-3 text-left' }} {{ $isSelectedOutcome ? 'ring-2 ' : '' }} {{ $chipTone === 'emerald' ? ($isSelectedOutcome ? 'border-emerald-300 bg-emerald-100 text-emerald-900 ring-emerald-300' : ($isFinishFlow && $finalizeCall ? 'border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'blue' ? ($isSelectedOutcome ? 'border-blue-300 bg-blue-100 text-blue-900 ring-blue-300' : ($isFinishFlow && $finalizeCall ? 'border-blue-200 bg-blue-50 text-blue-900 hover:bg-blue-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'amber' ? ($isSelectedOutcome ? 'border-amber-300 bg-amber-100 text-amber-900 ring-amber-300' : ($isFinishFlow && $finalizeCall ? 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'rose' ? ($isSelectedOutcome ? 'border-rose-300 bg-rose-100 text-rose-900 ring-rose-300' : ($isFinishFlow && $finalizeCall ? 'border-rose-200 bg-rose-50 text-rose-900 hover:bg-rose-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'slate' ? ($isSelectedOutcome ? 'border-slate-300 bg-slate-200 text-slate-900 ring-slate-300' : ($isFinishFlow && $finalizeCall ? 'border-slate-200 bg-slate-100 text-slate-900 hover:bg-slate-200' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }}"
+                                class="js-call-outcome-chip rounded-xl border text-sm font-medium transition {{ $isFinishFlow && $finalizeCall ? 'flex h-full items-center justify-center px-3 py-0 text-center whitespace-normal leading-tight' : 'px-3 py-3 text-left' }} {{ $isSelectedOutcome ? 'ring-2 ' : '' }} {{ $chipTone === 'emerald' ? ($isSelectedOutcome ? 'border-emerald-300 bg-emerald-100 text-emerald-900 ring-emerald-300' : ($isFinishFlow && $finalizeCall ? 'border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'blue' ? ($isSelectedOutcome ? 'border-blue-300 bg-blue-100 text-blue-900 ring-blue-300' : ($isFinishFlow && $finalizeCall ? 'border-blue-200 bg-blue-50 text-blue-900 hover:bg-blue-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'amber' ? ($isSelectedOutcome ? 'border-amber-300 bg-amber-100 text-amber-900 ring-amber-300' : ($isFinishFlow && $finalizeCall ? 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'rose' ? ($isSelectedOutcome ? 'border-rose-300 bg-rose-100 text-rose-900 ring-rose-300' : ($isFinishFlow && $finalizeCall ? 'border-rose-200 bg-rose-50 text-rose-900 hover:bg-rose-100' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }} {{ $chipTone === 'slate' ? ($isSelectedOutcome ? 'border-slate-300 bg-slate-200 text-slate-900 ring-slate-300' : ($isFinishFlow && $finalizeCall ? 'border-slate-200 bg-slate-100 text-slate-900 hover:bg-slate-200' : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50')) : '' }}"
                                 data-outcome-value="{{ $outcome }}"
                                 aria-pressed="{{ $isSelectedOutcome ? 'true' : 'false' }}"
                             >
@@ -191,9 +208,80 @@
                 </div>
 
                 @if ($isFinishFlow && $finalizeCall)
-                    <div class="mt-3 lg:mt-0">
+                    <div class="flex h-full min-h-[17rem] flex-col">
+                        <div class="space-y-3">
+                        <div class="h-6" aria-hidden="true"></div>
+                        <div class="js-callback-presets js-choice-panel-followup hidden min-h-[6rem] rounded-xl border border-amber-200 bg-amber-50/70 p-2.5 transition" data-choice-panel="followup">
+                            <input
+                                id="next_follow_up_at"
+                                name="next_follow_up_at"
+                                type="datetime-local"
+                                value="{{ old('next_follow_up_at', optional($call->next_follow_up_at)->format('Y-m-d\\TH:i')) }}"
+                                class="sr-only"
+                            >
+                            <div class="grid w-fit grid-cols-3 gap-2">
+                                <button type="button" class="js-followup-preset h-9 w-24 rounded-md bg-amber-100 px-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200" data-preset="today_afternoon">
+                                    Dnes 15:00
+                                </button>
+                                <button type="button" class="js-followup-preset h-9 w-24 rounded-md bg-amber-100 px-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200" data-preset="tomorrow_morning">
+                                    Zitra 09:00
+                                </button>
+                                <button type="button" class="js-followup-preset h-9 w-24 rounded-md bg-amber-100 px-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200" data-preset="tomorrow_afternoon">
+                                    Zitra 15:00
+                                </button>
+                            </div>
+                            <div class="mt-2 flex items-center gap-2">
+                                <input id="next_follow_up_date_quick" type="date" class="js-followup-quick-date h-9 min-w-0 flex-1 rounded-md border-slate-300 text-sm">
+                                <input id="next_follow_up_time_quick" type="time" class="js-followup-quick-time h-9 min-w-0 flex-1 rounded-md border-slate-300 text-sm" step="60">
+                            </div>
+                        </div>
+                        @error('next_follow_up_at')
+                            <p class="text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+
+                        <div class="js-call-panel js-panel-meeting js-choice-panel-meeting cursor-pointer rounded-xl border border-slate-200 bg-white p-2.5 transition" data-show-for="meeting-booked,interested" data-choice-panel="meeting">
+                            <div>
+                                <div class="text-sm font-semibold text-slate-800">Schuzka</div>
+                                <input
+                                    id="meeting_planned_at"
+                                    name="meeting_planned_at"
+                                    type="datetime-local"
+                                    value="{{ old('meeting_planned_at', optional($call->meeting_planned_at)->format('Y-m-d\\TH:i')) }}"
+                                    class="sr-only js-datetime-main"
+                                    data-split-date="meeting_planned_at_date"
+                                    data-split-time="meeting_planned_at_time"
+                                >
+                                <div class="mt-1 flex items-center gap-2">
+                                    <input id="meeting_planned_at_date" type="date" class="h-9 min-w-0 flex-1 rounded-md border-slate-300 text-sm">
+                                    <input id="meeting_planned_at_time" type="time" step="60" class="h-9 min-w-0 flex-1 rounded-md border-slate-300 text-sm">
+                                </div>
+                                @error('meeting_planned_at')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                        </div>
+
+                        @if (! $isCallerFinalizeMinimal)
+                            <div class="js-call-panel js-panel-handover mt-auto pt-3" data-show-for="">
+                                <select id="handed_over_to_id" name="handed_over_to_id" class="w-full h-9 rounded-md border-slate-300 text-sm">
+                                    <option value="">Predani leadu: Bez predani</option>
+                                    @foreach ($users as $user)
+                                        <option value="{{ $user->id }}" @selected((string) old('handed_over_to_id', $call->handed_over_to_id) === (string) $user->id)>
+                                            Predat: {{ $user->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('handed_over_to_id')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="flex h-full flex-col">
                         <label for="summary" class="block text-sm font-medium text-slate-700">Poznamka / shrnuti hovoru</label>
-                        <textarea id="summary" name="summary" rows="4" class="mt-1 w-full rounded-md border-slate-300" autofocus>{{ old('summary', $call->summary) }}</textarea>
+                        <textarea id="summary" name="summary" rows="1" class="mt-1 w-full min-h-[17.5rem] flex-1 rounded-md border-slate-300" autofocus>{{ old('summary', $call->summary) }}</textarea>
                         <p class="mt-1 text-xs text-slate-500">Poznamku muzes psat prubezne behem hovoru. Dalsi kroky se jen prizpusobi podle vysledku.</p>
                         @error('summary')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -214,91 +302,23 @@
             </div>
         @endif
 
-        @if ($isFinishFlow && $finalizeCall)
-            <div class="js-callback-presets hidden rounded-xl border border-amber-200 bg-amber-50/70 p-3">
-                    <div class="mb-2 text-xs font-medium uppercase tracking-wide text-amber-700">Rychly termin pro znovu zavolat</div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <button type="button" class="js-followup-preset rounded-md bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200" data-preset="today_afternoon">
-                            Dnes odpoledne (15:00)
-                        </button>
-                        <button type="button" class="js-followup-preset rounded-md bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200" data-preset="tomorrow_morning">
-                            Zitra dopoledne (09:00)
-                        </button>
-                        <button type="button" class="js-followup-preset rounded-md bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200" data-preset="tomorrow_afternoon">
-                            Zitra odpoledne (15:00)
-                        </button>
-                        <div class="flex items-center gap-2 rounded-md bg-white/70 px-2 py-1 ring-1 ring-amber-200">
-                            <input id="next_follow_up_date_quick" type="date" class="js-followup-quick-date rounded-md border-amber-200 bg-white px-2 py-1 text-xs text-slate-900">
-                            <input id="next_follow_up_time_quick" type="time" class="js-followup-quick-time rounded-md border-amber-200 bg-white px-2 py-1 text-xs text-slate-900" step="60">
-                        </div>
-                    </div>
-                    <div class="mt-2 text-xs text-slate-500">
-                        Zkratky: <kbd class="rounded bg-slate-200 px-1.5 py-0.5">Alt+1</kbd>,
-                        <kbd class="rounded bg-slate-200 px-1.5 py-0.5">Alt+2</kbd>,
-                        <kbd class="rounded bg-slate-200 px-1.5 py-0.5">Alt+3</kbd>
-                    </div>
-            </div>
-        @endif
-
-        @if (! $isActiveNoteOnlyFinish)
-            @if ($isFinishFlow && $finalizeCall)
-                <div class="space-y-3">
-                    <details class="js-call-panel js-panel-followup rounded-xl border border-slate-200 bg-white p-3" data-show-for="callback,no-answer,interested" @open(in_array(old('outcome', $finishOutcomeDefault), ['callback','no-answer','interested'], true))>
-                        <summary class="cursor-pointer list-none text-sm font-semibold text-slate-800">
-                            Follow-up
-                            <span class="ml-2 text-xs font-normal text-slate-500">naplanovat dalsi kontakt</span>
-                        </summary>
-                        <div class="mt-3">
-                            <label for="next_follow_up_at" class="block text-sm font-medium text-slate-700">Dalsi follow-up</label>
-                            <input id="next_follow_up_at" name="next_follow_up_at" type="datetime-local" value="{{ old('next_follow_up_at', optional($call->next_follow_up_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
-                            @error('next_follow_up_at')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </details>
-
-                    <details class="js-call-panel js-panel-meeting rounded-xl border border-slate-200 bg-white p-3" data-show-for="meeting-booked,interested" @open(in_array(old('outcome', $finishOutcomeDefault), ['meeting-booked','interested'], true))>
-                        <summary class="cursor-pointer list-none text-sm font-semibold text-slate-800">
-                            Schuzka
-                            <span class="ml-2 text-xs font-normal text-slate-500">volitelne naplanovani</span>
-                        </summary>
-                        <div class="mt-3">
-                            <label for="meeting_planned_at" class="block text-sm font-medium text-slate-700">Planovana schuzka</label>
-                            <input id="meeting_planned_at" name="meeting_planned_at" type="datetime-local" value="{{ old('meeting_planned_at', optional($call->meeting_planned_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
-                            @error('meeting_planned_at')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </details>
-
-                    @if (! $isCallerFinalizeMinimal)
-                        <details class="js-call-panel js-panel-handover rounded-xl border border-slate-200 bg-white p-3" data-show-for="interested,meeting-booked">
-                            <summary class="cursor-pointer list-none text-sm font-semibold text-slate-800">
-                                Predani leadu
-                                <span class="ml-2 text-xs font-normal text-slate-500">volitelne</span>
-                            </summary>
-                            <div class="mt-3">
-                                <label for="handed_over_to_id" class="block text-sm font-medium text-slate-700">Predat komu</label>
-                                <select id="handed_over_to_id" name="handed_over_to_id" class="mt-1 w-full rounded-md border-slate-300">
-                                    <option value="">Bez predani</option>
-                                    @foreach ($users as $user)
-                                        <option value="{{ $user->id }}" @selected((string) old('handed_over_to_id', $call->handed_over_to_id) === (string) $user->id)>
-                                            {{ $user->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('handed_over_to_id')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </details>
-                    @endif
-                </div>
-            @else
+        @if (! $isActiveNoteOnlyFinish && ! ($isFinishFlow && $finalizeCall))
                 <div class="grid gap-6 sm:grid-cols-2">
                     <div class="js-call-panel js-panel-followup" data-show-for="callback,no-answer,interested">
                         <label for="next_follow_up_at" class="block text-sm font-medium text-slate-700">Dalsi follow-up</label>
-                        <input id="next_follow_up_at" name="next_follow_up_at" type="datetime-local" value="{{ old('next_follow_up_at', optional($call->next_follow_up_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
+                        <input
+                                id="next_follow_up_at"
+                                name="next_follow_up_at"
+                                type="datetime-local"
+                                value="{{ old('next_follow_up_at', optional($call->next_follow_up_at)->format('Y-m-d\\TH:i')) }}"
+                                class="sr-only js-datetime-main"
+                                data-split-date="next_follow_up_at_date"
+                                data-split-time="next_follow_up_at_time"
+                            >
+                            <div class="mt-1 flex items-center gap-2">
+                                <input id="next_follow_up_at_date" type="date" class="h-9 rounded-md border-slate-300 text-sm">
+                                <input id="next_follow_up_at_time" type="time" step="60" class="h-9 w-28 rounded-md border-slate-300 text-sm">
+                            </div>
                         <p class="mt-1 text-xs text-slate-500">Volitelne. Pro callback/no-answer se casto hodi rychly termin vyse.</p>
                         @error('next_follow_up_at')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -306,7 +326,19 @@
                     </div>
                     <div class="js-call-panel js-panel-meeting" data-show-for="meeting-booked,interested">
                         <label for="meeting_planned_at" class="block text-sm font-medium text-slate-700">Planovana schuzka</label>
-                        <input id="meeting_planned_at" name="meeting_planned_at" type="datetime-local" value="{{ old('meeting_planned_at', optional($call->meeting_planned_at)->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border-slate-300">
+                        <input
+                                id="meeting_planned_at"
+                                name="meeting_planned_at"
+                                type="datetime-local"
+                                value="{{ old('meeting_planned_at', optional($call->meeting_planned_at)->format('Y-m-d\\TH:i')) }}"
+                                class="sr-only js-datetime-main"
+                                data-split-date="meeting_planned_at_date"
+                                data-split-time="meeting_planned_at_time"
+                            >
+                            <div class="mt-1 flex items-center gap-2">
+                                <input id="meeting_planned_at_date" type="date" class="h-9 rounded-md border-slate-300 text-sm">
+                                <input id="meeting_planned_at_time" type="time" step="60" class="h-9 w-28 rounded-md border-slate-300 text-sm">
+                            </div>
                         @error('meeting_planned_at')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -330,7 +362,6 @@
                     </div>
                     <div class="js-call-panel js-panel-status hidden" data-show-for=""></div>
                 </div>
-            @endif
         @endif
 
         @unless ($isFinishFlow)
@@ -345,15 +376,9 @@
 
         <div class="flex flex-wrap items-center gap-3">
             @if ($isActiveNoteOnlyFinish)
-                <form method="POST" action="{{ route('calls.end', $call) }}" class="js-active-call-end-form w-full sm:w-auto">
-                    @csrf
-                    @if ($isCallerMode)
-                        <input type="hidden" name="caller_mode" value="1">
-                    @endif
-                    <button type="submit" class="hidden w-full items-center justify-center rounded-md bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700 sm:inline-flex sm:min-w-[15rem]">
-                        Ukoncit hovor
-                    </button>
-                </form>
+                <button type="submit" form="end-call-form" class="hidden w-full items-center justify-center rounded-md bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700 sm:inline-flex sm:min-w-[15rem]">
+                    Ukoncit hovor
+                </button>
             @else
                 <button type="submit" class="rounded-md {{ $isFinishFlow ? 'bg-emerald-600' : 'bg-slate-900' }} px-4 py-2 text-sm font-medium text-white">{{ $submitText }}</button>
             @endif
@@ -375,10 +400,14 @@
             const outcomeChips = Array.from(form.querySelectorAll('.js-call-outcome-chip'));
             const panels = Array.from(form.querySelectorAll('.js-call-panel'));
             const callbackPresetsWrap = form.querySelector('.js-callback-presets');
+            const followUpChoicePanel = form.querySelector('.js-choice-panel-followup');
+            const meetingChoicePanel = form.querySelector('.js-choice-panel-meeting');
             const followUpInput = form.querySelector('#next_follow_up_at');
             const followUpQuickDate = form.querySelector('.js-followup-quick-date');
             const followUpQuickTime = form.querySelector('.js-followup-quick-time');
             const meetingInput = form.querySelector('#meeting_planned_at');
+            const meetingDateInput = form.querySelector('#meeting_planned_at_date');
+            const followUpDateQuickInput = form.querySelector('#next_follow_up_date_quick');
             const summaryInput = form.querySelector('#summary');
             const presetButtons = Array.from(form.querySelectorAll('.js-followup-preset'));
             const isFinishFlow = {{ $isFinishFlow ? 'true' : 'false' }};
@@ -388,7 +417,7 @@
             const draftKey = callId ? ('call-finish-summary-draft:' + String(callId)) : null;
             let autosaveTimer = null;
             const liveTimer = form.querySelector('.js-call-live-timer');
-            const quickEndForm = form.querySelector('.js-active-call-end-form');
+            const quickEndForm = document.querySelector('.js-active-call-end-form');
 
             const formatDuration = function (totalSeconds) {
                 const seconds = Math.max(0, totalSeconds | 0);
@@ -416,6 +445,7 @@
                 if (!input) return;
                 const local = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
                 input.value = local.toISOString().slice(0, 16);
+                input.dispatchEvent(new Event('input', { bubbles: true }));
             };
 
             const syncFollowUpQuickInput = function () {
@@ -434,6 +464,78 @@
 
             const hasValue = function (input) {
                 return !!(input && String(input.value || '').trim() !== '');
+            };
+
+            const setChoicePanelTone = function (element, tone) {
+                if (!element) return;
+                element.classList.remove(
+                    'border-blue-300',
+                    'bg-blue-50/70',
+                    'ring-1',
+                    'ring-2',
+                    'ring-blue-200',
+                    'border-amber-300',
+                    'bg-amber-100/80',
+                    'ring-amber-200',
+                    'border-slate-300',
+                    'bg-slate-100/70',
+                    'ring-slate-200',
+                    'opacity-60',
+                    'saturate-50'
+                );
+
+                if (tone === 'blue') {
+                    element.classList.add('border-blue-300', 'bg-blue-50/70', 'ring-2', 'ring-blue-200');
+                }
+
+                if (tone === 'amber') {
+                    element.classList.add('border-amber-300', 'bg-amber-100/80', 'ring-2', 'ring-amber-200');
+                }
+
+                if (tone === 'muted') {
+                    element.classList.add('border-slate-300', 'bg-slate-100/70', 'ring-1', 'ring-slate-200', 'opacity-60', 'saturate-50');
+                }
+            };
+
+            const updateChoicePanels = function () {
+                if (!isFinishFlow || !finalizeCall) return;
+
+                const outcome = outcomeSelect ? String(outcomeSelect.value || '') : '';
+                const hasMeeting = hasValue(meetingInput);
+                const hasFollowUp = hasValue(followUpInput);
+
+                if (outcome === 'meeting-booked') {
+                    setChoicePanelTone(meetingChoicePanel, 'blue');
+                    setChoicePanelTone(followUpChoicePanel, null);
+                    return;
+                }
+
+                if (outcome === 'interested') {
+                    if (hasMeeting) {
+                        setChoicePanelTone(meetingChoicePanel, 'blue');
+                        setChoicePanelTone(followUpChoicePanel, 'muted');
+                        return;
+                    }
+
+                    if (hasFollowUp) {
+                        setChoicePanelTone(followUpChoicePanel, 'amber');
+                        setChoicePanelTone(meetingChoicePanel, 'muted');
+                        return;
+                    }
+
+                    setChoicePanelTone(followUpChoicePanel, 'muted');
+                    setChoicePanelTone(meetingChoicePanel, 'muted');
+                    return;
+                }
+
+                if (outcome === 'callback' || outcome === 'no-answer') {
+                    setChoicePanelTone(followUpChoicePanel, 'amber');
+                    setChoicePanelTone(meetingChoicePanel, null);
+                    return;
+                }
+
+                setChoicePanelTone(followUpChoicePanel, null);
+                setChoicePanelTone(meetingChoicePanel, null);
             };
 
             const nextBusinessTime = function (daysAhead, hour) {
@@ -517,14 +619,19 @@
                 });
 
                 if (callbackPresetsWrap) {
-                    const showPresets = isFinishFlow && finalizeCall && (outcome === 'callback' || outcome === 'no-answer');
-                    callbackPresetsWrap.classList.toggle('hidden', !showPresets);
+                    const showPresets = isFinishFlow && finalizeCall && (outcome === 'callback' || outcome === 'no-answer' || outcome === 'interested');
+                    const keepSlot = isFinishFlow && finalizeCall && (outcome === 'interested' || outcome === 'meeting-booked');
+
+                    callbackPresetsWrap.classList.toggle('hidden', !showPresets && !keepSlot);
+                    callbackPresetsWrap.classList.toggle('invisible', !showPresets && keepSlot);
+                    callbackPresetsWrap.classList.toggle('pointer-events-none', !showPresets);
                     if (showPresets) {
                         syncFollowUpQuickInput();
                     }
                 }
 
                 applySmartDefaults(outcome);
+                updateChoicePanels();
             };
 
             const updateOutcomeChipState = function () {
@@ -567,14 +674,69 @@
                 const time = String(followUpQuickTime.value || '').trim();
                 if (!date) return;
                 followUpInput.value = time ? (date + 'T' + time) : (date + 'T09:00');
+                followUpInput.dispatchEvent(new Event('input', { bubbles: true }));
             };
 
             if (followUpQuickDate && followUpQuickTime && followUpInput) {
                 followUpInput.addEventListener('change', syncFollowUpQuickInput);
                 followUpInput.addEventListener('input', syncFollowUpQuickInput);
+                followUpInput.addEventListener('change', updateChoicePanels);
+                followUpInput.addEventListener('input', updateChoicePanels);
                 followUpQuickDate.addEventListener('change', syncMainFollowUpFromQuick);
                 followUpQuickTime.addEventListener('change', syncMainFollowUpFromQuick);
             }
+
+            if (meetingInput) {
+                meetingInput.addEventListener('change', updateChoicePanels);
+                meetingInput.addEventListener('input', updateChoicePanels);
+            }
+
+            form.addEventListener('focusin', function (event) {
+                const target = event.target instanceof Element ? event.target : null;
+                if (!target) return;
+                if (target.closest('[data-choice-panel="meeting"]')) {
+                    setChoicePanelTone(meetingChoicePanel, 'blue');
+                    setChoicePanelTone(followUpChoicePanel, 'muted');
+                }
+                if (target.closest('[data-choice-panel="followup"]')) {
+                    setChoicePanelTone(followUpChoicePanel, 'amber');
+                    setChoicePanelTone(meetingChoicePanel, 'muted');
+                }
+            });
+
+            form.addEventListener('click', function (event) {
+                const target = event.target instanceof Element ? event.target : null;
+                if (!target) return;
+
+                if (target.closest('input, select, textarea, button, a, label')) {
+                    return;
+                }
+
+                const meetingPanel = target.closest('[data-choice-panel="meeting"]');
+                if (meetingPanel) {
+                    setChoicePanelTone(meetingChoicePanel, 'blue');
+                    setChoicePanelTone(followUpChoicePanel, 'muted');
+                    if (meetingDateInput) {
+                        meetingDateInput.focus();
+                        if (typeof meetingDateInput.showPicker === 'function') {
+                            try {
+                                meetingDateInput.showPicker();
+                            } catch (error) {
+                            }
+                        } else {
+                            meetingDateInput.click();
+                        }
+                    }
+                    return;
+                }
+
+                const followUpPanel = target.closest('[data-choice-panel="followup"]');
+                if (followUpPanel) {
+                    setChoicePanelTone(followUpChoicePanel, 'amber');
+                    setChoicePanelTone(meetingChoicePanel, 'muted');
+                    if (followUpDateQuickInput) followUpDateQuickInput.focus();
+                }
+            });
 
             if (isFinishFlow && summaryInput && draftKey) {
                 try {
@@ -648,17 +810,18 @@
     </script>
 
     @if ($isActiveNoteOnlyFinish)
+        <form id="end-call-form" method="POST" action="{{ route('calls.end', $call) }}" class="js-active-call-end-form">
+            @csrf
+            @if ($isCallerMode)
+                <input type="hidden" name="caller_mode" value="1">
+            @endif
+        </form>
         <div class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 backdrop-blur sm:hidden">
-            <form method="POST" action="{{ route('calls.end', $call) }}" class="js-active-call-end-form">
-                @csrf
-                @if ($isCallerMode)
-                    <input type="hidden" name="caller_mode" value="1">
-                @endif
-                <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-rose-600 px-4 py-4 text-base font-semibold text-white shadow-sm hover:bg-rose-700">
-                    Ukoncit hovor
-                </button>
-            </form>
+            <button type="submit" form="end-call-form" class="inline-flex w-full items-center justify-center rounded-xl bg-rose-600 px-4 py-4 text-base font-semibold text-white shadow-sm hover:bg-rose-700">
+                Ukoncit hovor
+            </button>
             <div class="mt-2 text-center text-[11px] text-slate-500">Tip: <kbd class="rounded bg-slate-100 px-1 py-0.5">Ctrl+Enter</kbd> v poznamce</div>
         </div>
     @endif
 @endsection
+

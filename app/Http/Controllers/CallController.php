@@ -10,18 +10,29 @@ use App\Models\Meeting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CallController extends Controller
 {
-    private const COMPANY_STATUSES = ['new', 'contacted', 'follow-up', 'qualified', 'lost'];
+    private const COMPANY_STATUSES = ['new', 'follow-up', 'meeting', 'deal', 'lost'];
     private const OUTCOMES = ['pending', 'no-answer', 'callback', 'interested', 'not-interested', 'meeting-booked'];
 
     public function index(Request $request): View
     {
+        $user = $request->user();
         $query = Call::query()
             ->with(['company', 'caller'])
             ->latest('called_at');
+
+        if ($user && ! $user->isManager()) {
+            $query->where(function ($subQuery) use ($user) {
+                $subQuery
+                    ->where('caller_id', $user->id)
+                    ->orWhere('handed_over_to_id', $user->id);
+            });
+        }
 
         if ($request->filled('outcome')) {
             $query->where('outcome', $request->string('outcome'));
@@ -46,6 +57,7 @@ class CallController extends Controller
         return view('crm.calls.index', [
             'calls' => $query->paginate(20)->withQueryString(),
             'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
+            'users' => User::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'outcome' => (string) $request->input('outcome', ''),
                 'company_id' => (string) $request->input('company_id', ''),
@@ -83,16 +95,83 @@ class CallController extends Controller
                 ->with('status', 'Uz mate aktivni hovor. Nejdriv ho dokoncete nebo zapisujte poznamku v prubehu hovoru.');
         }
 
-        $call = Call::create([
-            'company_id' => $company->id,
-            'caller_id' => $user->id,
-            'called_at' => now(),
-            'outcome' => 'pending',
-        ]);
+        $result = DB::transaction(function () use ($company, $user) {
+            $lockedCompany = Company::query()
+                ->with('firstCaller:id,name')
+                ->whereKey($company->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($company->status === 'new') {
-            $company->update(['status' => 'contacted']);
+            $companyPendingCall = Call::query()
+                ->where('company_id', $lockedCompany->id)
+                ->where('outcome', 'pending')
+                ->whereNull('ended_at')
+                ->latest('called_at')
+                ->lockForUpdate()
+                ->first();
+
+            if ($companyPendingCall) {
+                return ['pending_call' => $companyPendingCall];
+            }
+
+            $autoAssigned = false;
+            if ($lockedCompany->first_contacted_at === null) {
+                if ($lockedCompany->first_caller_user_id === null) {
+                    $lockedCompany->first_caller_user_id = $user->id;
+                    $lockedCompany->first_caller_assigned_at = now();
+                    $autoAssigned = true;
+                } elseif (! $user->isManager() && (int) $lockedCompany->first_caller_user_id !== (int) $user->id) {
+                    return ['blocked_by' => $lockedCompany->firstCaller?->name];
+                }
+            }
+
+            $call = Call::create([
+                'company_id' => $lockedCompany->id,
+                'caller_id' => $user->id,
+                'called_at' => now(),
+                'outcome' => 'pending',
+            ]);
+
+            if ($lockedCompany->status === 'new') {
+                $lockedCompany->status = 'follow-up';
+            }
+
+            if ($lockedCompany->assigned_user_id === null) {
+                $lockedCompany->assigned_user_id = $user->id;
+            }
+
+            $lockedCompany->save();
+
+            return ['call' => $call, 'auto_assigned' => $autoAssigned];
+        });
+
+        if (isset($result['pending_call']) && $result['pending_call'] instanceof Call) {
+            $pendingCall = $result['pending_call'];
+
+            if ((int) $pendingCall->caller_id === (int) $user->id) {
+                $params = ['call' => $pendingCall];
+                if ($request->boolean('caller_mode')) {
+                    $params['caller_mode'] = 1;
+                }
+
+                return redirect()
+                    ->route('calls.finish', $params)
+                    ->with('status', 'Firma uz ma rozpracovany hovor. Pokracujte v nem.');
+            }
+
+            return redirect()
+                ->back()
+                ->with('status', 'Firma uz ma aktivni hovor u jineho uzivatele.');
         }
+
+        if (! empty($result['blocked_by'])) {
+            return redirect()
+                ->back()
+                ->with('status', 'Firma je ve fronte prirazena uzivateli '.$result['blocked_by'].'.');
+        }
+
+        /** @var \App\Models\Call $call */
+        $call = $result['call'];
 
         $finishRouteParams = ['call' => $call];
         if ($request->boolean('caller_mode')) {
@@ -101,7 +180,9 @@ class CallController extends Controller
 
         return redirect()
             ->route('calls.finish', $finishRouteParams)
-            ->with('status', 'Hovor byl zahajen. Po ukonceni doplnte vysledek, poznamku a dalsi kroky.');
+            ->with('status', ($result['auto_assigned'] ?? false)
+                ? 'Hovor byl zahajen. Firma byla automaticky prirazena vam jako first caller.'
+                : 'Hovor byl zahajen. Po ukonceni doplnte vysledek, poznamku a dalsi kroky.');
     }
 
     public function create(Request $request): View
@@ -122,6 +203,7 @@ class CallController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validateCall($request);
+        $data = $this->enforceCallOutcomeRules($data);
         $data['caller_id'] = $request->user()?->id;
 
         $call = Call::create($data);
@@ -136,6 +218,8 @@ class CallController extends Controller
 
     public function show(Call $call): View
     {
+        $this->ensureCanAccessCall(request()->user(), $call);
+
         $call->load(['company', 'caller', 'handedOverTo'])
             ->loadCount(['followUps', 'leadTransfers', 'meetings']);
 
@@ -144,6 +228,8 @@ class CallController extends Controller
 
     public function edit(Call $call): View
     {
+        $this->ensureCanAccessCall(request()->user(), $call);
+
         return view('crm.calls.form', [
             'call' => $call,
             'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
@@ -155,6 +241,8 @@ class CallController extends Controller
 
     public function finish(Call $call): View
     {
+        $this->ensureCanAccessCall(request()->user(), $call);
+
         $finalizeCall = request()->boolean('finalize_call') || $call->ended_at !== null || $call->outcome !== 'pending';
 
         return view('crm.calls.form', [
@@ -174,9 +262,7 @@ class CallController extends Controller
             return redirect()->route('login');
         }
 
-        if (! $user->isManager() && $call->caller_id && $call->caller_id !== $user->id) {
-            abort(403);
-        }
+        $this->ensureCanAccessCall($user, $call);
 
         if ($call->outcome === 'pending' && $call->ended_at === null) {
             $call->update(['ended_at' => now()]);
@@ -191,6 +277,8 @@ class CallController extends Controller
 
     public function update(Request $request, Call $call): RedirectResponse
     {
+        $this->ensureCanAccessCall($request->user(), $call);
+
         $isFinishFlow = (string) $request->input('flow_mode') === 'finish';
         $isCallerMode = $request->boolean('caller_mode');
         $finalizeCall = $request->boolean('finalize_call') || $call->ended_at !== null || $call->outcome !== 'pending';
@@ -217,6 +305,7 @@ class CallController extends Controller
         }
 
         $data = $this->validateCall($request);
+        $data = $this->enforceCallOutcomeRules($data);
         if ($isFinishFlow && $finalizeCall && empty($data['ended_at'])) {
             $data['ended_at'] = $call->ended_at ?: now();
         }
@@ -279,9 +368,7 @@ class CallController extends Controller
             return redirect()->route('login');
         }
 
-        if (! $user->isManager() && $call->caller_id && $call->caller_id !== $user->id) {
-            abort(403);
-        }
+        $this->ensureCanAccessCall($user, $call);
 
         $data = $request->validate([
             'outcome' => ['required', 'in:'.implode(',', self::OUTCOMES)],
@@ -304,9 +391,7 @@ class CallController extends Controller
             return redirect()->route('login');
         }
 
-        if (! $user->isManager() && $call->caller_id && $call->caller_id !== $user->id) {
-            abort(403);
-        }
+        $this->ensureCanAccessCall($user, $call);
 
         if ($call->outcome !== 'pending' || $call->ended_at !== null) {
             $message = 'Quick note lze pridat jen k aktivnimu hovoru.';
@@ -354,6 +439,24 @@ class CallController extends Controller
             'meeting_planned_at' => ['nullable', 'date'],
             'handed_over_to_id' => ['nullable', 'exists:users,id'],
         ]);
+    }
+
+    private function ensureCanAccessCall($user, Call $call): void
+    {
+        if (! $user) {
+            abort(401);
+        }
+
+        if ($user->isManager()) {
+            return;
+        }
+
+        $allowed = ((int) ($call->caller_id ?? 0) === (int) $user->id)
+            || ((int) ($call->handed_over_to_id ?? 0) === (int) $user->id)
+            || ((int) ($call->company?->assigned_user_id ?? 0) === (int) $user->id)
+            || ((int) ($call->company?->first_caller_user_id ?? 0) === (int) $user->id);
+
+        abort_unless($allowed, 403);
     }
 
     private function syncNextActions(Call $call): array
@@ -431,9 +534,9 @@ class CallController extends Controller
     {
         $targetStatus = match ($call->outcome) {
             'not-interested' => 'lost',
-            'meeting-booked' => 'qualified',
+            'meeting-booked' => 'meeting',
             'callback', 'no-answer' => 'follow-up',
-            'interested' => $call->next_follow_up_at ? 'follow-up' : 'contacted',
+            'interested' => $call->meeting_planned_at ? 'meeting' : 'follow-up',
             default => ($call->next_follow_up_at ? 'follow-up' : null),
         };
 
@@ -441,7 +544,47 @@ class CallController extends Controller
             return;
         }
 
-        $call->company()->update(['status' => $targetStatus]);
+        $updates = ['status' => $targetStatus];
+
+        if ($targetStatus === 'follow-up' && empty($call->company?->assigned_user_id)) {
+            $updates['assigned_user_id'] = $call->handed_over_to_id ?: $call->caller_id;
+        }
+
+        // Active handler can change over time (e.g. handover after call).
+        if ($call->handed_over_to_id && $call->handed_over_to_id !== $call->caller_id) {
+            $updates['first_caller_user_id'] = $call->handed_over_to_id;
+            $updates['first_caller_assigned_at'] = now();
+        }
+
+        $call->company()->update($updates);
+    }
+
+    private function enforceCallOutcomeRules(array $data): array
+    {
+        $outcome = (string) ($data['outcome'] ?? '');
+        $hasFollowUp = ! empty($data['next_follow_up_at']);
+        $hasMeeting = ! empty($data['meeting_planned_at']);
+
+        $errors = [];
+
+        if (in_array($outcome, ['callback', 'no-answer'], true) && ! $hasFollowUp) {
+            $errors['next_follow_up_at'] = 'Pro tento vysledek je povinne naplanovat dalsi follow-up.';
+        }
+
+        if ($outcome === 'interested' && ! $hasFollowUp && ! $hasMeeting) {
+            $errors['next_follow_up_at'] = 'Pri vysledku "zajem" je povinny dalsi krok: follow-up nebo schuzka.';
+            $errors['meeting_planned_at'] = 'Pri vysledku "zajem" je povinny dalsi krok: follow-up nebo schuzka.';
+        }
+
+        if ($outcome === 'meeting-booked' && ! $hasMeeting) {
+            $errors['meeting_planned_at'] = 'Pri vysledku "schuzka domluvena" je povinne vyplnit termin schuzky.';
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        return $data;
     }
 
     private function syncFirstContactedAt(Call $call): void

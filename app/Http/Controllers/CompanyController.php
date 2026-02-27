@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Models\CompanyContact;
 use App\Models\FollowUp;
 use App\Models\Meeting;
 use App\Models\User;
@@ -14,8 +15,9 @@ use Illuminate\View\View;
 
 class CompanyController extends Controller
 {
-    private const STATUSES = ['new', 'contacted', 'follow-up', 'qualified', 'lost'];
+    private const STATUSES = ['new', 'follow-up', 'meeting', 'deal', 'lost'];
     private const BULK_ACTIONS = [
+        'assign_owner',
         'assign_first_caller',
         'claim_first_caller',
         'unassign_first_caller',
@@ -27,11 +29,20 @@ class CompanyController extends Controller
     {
         $user = $request->user();
         $isManager = $user?->isManager() ?? false;
+        $quickFilter = (string) $request->input('quick_filter', '');
         $mine = $isManager
-            ? (string) $request->input('mine', $request->filled('assigned_user_id') ? '0' : '1')
+            ? (string) $request->input('mine', '0')
             : '1';
 
-        $query = Company::query()->with(['assignedUser', 'firstCaller']);
+        $query = Company::query()
+            ->with(['assignedUser', 'firstCaller'])
+            ->withCount([
+                'followUps as overdue_follow_ups_count' => function ($followUpsQuery) {
+                    $followUpsQuery
+                        ->where('status', 'open')
+                        ->where('due_at', '<', now());
+                },
+            ]);
 
         if ($request->filled('status')) {
             $query->where('status', (string) $request->input('status'));
@@ -59,7 +70,14 @@ class CompanyController extends Controller
             }
         }
 
-        if ($request->boolean('unassigned_queue_only')) {
+        if ($quickFilter === 'overdue') {
+            $query->where('status', 'follow-up');
+            $query->whereHas('followUps', function ($followUpsQuery) {
+                $followUpsQuery
+                    ->where('status', 'open')
+                    ->where('due_at', '<', now());
+            });
+        } elseif ($quickFilter === 'new_unassigned' || $request->boolean('unassigned_queue_only')) {
             $query->newUncontacted()->whereNull('first_caller_user_id');
         }
 
@@ -102,6 +120,7 @@ class CompanyController extends Controller
                 'first_caller_user_id' => (string) $request->input('first_caller_user_id', ''),
                 'mine' => $mine,
                 'unassigned_queue_only' => $request->boolean('unassigned_queue_only'),
+                'quick_filter' => $quickFilter,
             ],
             'quotaUser' => $quotaUser,
             'users' => User::query()->orderBy('name')->get(['id', 'name', 'role']),
@@ -140,9 +159,12 @@ class CompanyController extends Controller
 
     public function show(Company $company): View
     {
+        $this->ensureCanAccessCompany(request()->user(), $company);
+
         $company->load([
             'assignedUser',
             'firstCaller',
+            'contacts' => fn ($query) => $query->orderBy('name'),
             'calls' => fn ($query) => $query->with(['caller'])->latest('called_at')->limit(10),
             'followUps' => fn ($query) => $query->with(['assignedUser'])->latest('due_at')->limit(10),
             'leadTransfers' => fn ($query) => $query->with(['fromUser', 'toUser'])->latest('transferred_at')->limit(10),
@@ -281,6 +303,8 @@ class CompanyController extends Controller
 
     public function edit(Company $company): View
     {
+        $this->ensureCanAccessCompany(request()->user(), $company);
+
         return view('crm.companies.form', [
             'company' => $company,
             'users' => User::query()->orderBy('name')->get(['id', 'name', 'role']),
@@ -290,6 +314,8 @@ class CompanyController extends Controller
     public function update(Request $request, Company $company): RedirectResponse
     {
         $user = $request->user();
+        $this->ensureCanAccessCompany($user, $company);
+
         $isManager = $user?->isManager() ?? false;
         $data = $this->validateCompany($request, $isManager);
 
@@ -328,6 +354,65 @@ class CompanyController extends Controller
             ->with('status', 'Stav firmy byl rychle upraven.');
     }
 
+    public function quickAssignedUser(Request $request, Company $company): RedirectResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        if (! $user->isManager()) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'assigned_user_id' => ['nullable', 'exists:users,id'],
+        ]);
+
+        $company->update([
+            'assigned_user_id' => $data['assigned_user_id'] ?? null,
+        ]);
+
+        return redirect()->to(url()->previous() ?: route('companies.index'))
+            ->with('status', 'Aktivni resici byl rychle upraven.');
+    }
+
+    public function quickFirstCaller(Request $request, Company $company): RedirectResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        if (! $user->isManager()) {
+            abort(403);
+        }
+
+        if (! $this->canQueueAssign($company)) {
+            return redirect()->to(url()->previous() ?: route('companies.index'))
+                ->with('status', 'First caller lze upravit jen u NEW firmy bez prvniho kontaktu.');
+        }
+
+        $data = $request->validate([
+            'first_caller_user_id' => ['nullable', 'exists:users,id'],
+        ]);
+
+        $targetUserId = isset($data['first_caller_user_id']) && $data['first_caller_user_id'] !== null
+            ? (int) $data['first_caller_user_id']
+            : null;
+        $currentUserId = $company->first_caller_user_id !== null ? (int) $company->first_caller_user_id : null;
+
+        $company->update([
+            'first_caller_user_id' => $targetUserId,
+            'first_caller_assigned_at' => $targetUserId === null
+                ? null
+                : ($currentUserId !== $targetUserId ? now() : $company->first_caller_assigned_at),
+        ]);
+
+        return redirect()->to(url()->previous() ?: route('companies.index'))
+            ->with('status', 'First caller byl rychle upraven.');
+    }
+
     public function quickDefer(Request $request, Company $company): RedirectResponse
     {
         $user = $request->user();
@@ -360,13 +445,44 @@ class CompanyController extends Controller
             ]);
         }
 
-        if ($company->status === 'new' || $company->status === 'contacted') {
+        if ($company->status === 'new') {
             $company->update(['status' => 'follow-up']);
         }
 
         return redirect()
             ->route('companies.next-mine', ['current_company_id' => $company->id, 'skip_lost' => 1])
             ->with('status', 'Firma byla odlozena na follow-up a presunuta na dalsi ve fronte.');
+    }
+
+    public function storeContact(Request $request, Company $company): RedirectResponse
+    {
+        $this->ensureCanAccessCompany($request->user(), $company);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:64'],
+            'position' => ['nullable', 'string', 'max:128'],
+            'phone' => ['nullable', 'string', 'max:64'],
+            'email' => ['nullable', 'email', 'max:255'],
+        ]);
+
+        $company->contacts()->create($data);
+
+        return redirect()
+            ->route('companies.show', $company)
+            ->with('status', 'Kontaktni osoba byla pridana.');
+    }
+
+    public function destroyContact(Request $request, Company $company, CompanyContact $contact): RedirectResponse
+    {
+        $this->ensureCanAccessCompany($request->user(), $company);
+        abort_unless((int) $contact->company_id === (int) $company->id, 404);
+
+        $contact->delete();
+
+        return redirect()
+            ->route('companies.show', $company)
+            ->with('status', 'Kontaktni osoba byla odebrana.');
     }
 
     public function bulk(Request $request): RedirectResponse
@@ -380,6 +496,7 @@ class CompanyController extends Controller
             'company_ids' => ['required', 'array', 'min:1'],
             'company_ids.*' => ['integer', 'exists:companies,id'],
             'bulk_action' => ['required', 'in:'.implode(',', self::BULK_ACTIONS)],
+            'assigned_user_id' => ['nullable', 'exists:users,id'],
             'first_caller_user_id' => ['nullable', 'exists:users,id'],
             'status' => ['nullable', 'in:'.implode(',', self::STATUSES)],
             'note_append' => ['nullable', 'string', 'max:5000'],
@@ -391,6 +508,7 @@ class CompanyController extends Controller
 
         [$updated, $skipped] = DB::transaction(function () use ($companies, $data, $user) {
             return match ($data['bulk_action']) {
+                'assign_owner' => $this->bulkAssignOwner($companies, $user, $data['assigned_user_id'] ?? null),
                 'assign_first_caller' => $this->bulkAssignFirstCaller($companies, $user, $data['first_caller_user_id'] ?? null),
                 'claim_first_caller' => $this->bulkAssignFirstCaller($companies, $user, $user->id, true),
                 'unassign_first_caller' => $this->bulkUnassignFirstCaller($companies, $user),
@@ -408,8 +526,13 @@ class CompanyController extends Controller
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'ico' => ['nullable', 'string', 'max:32'],
+            'turnover' => ['nullable', 'string', 'max:64'],
+            'nace' => ['nullable', 'string', 'max:64'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'region' => ['nullable', 'string', 'max:100'],
             'website' => ['nullable', 'url', 'max:255'],
             'contact_person' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:64'],
             'status' => ['required', 'string', 'max:50'],
             'notes' => ['nullable', 'string'],
@@ -464,9 +587,48 @@ class CompanyController extends Controller
             || (int) $company->first_caller_user_id === $userId;
     }
 
+    private function ensureCanAccessCompany(?User $user, Company $company): void
+    {
+        if (! $user) {
+            abort(401);
+        }
+
+        if ($user->isManager()) {
+            return;
+        }
+
+        abort_unless($this->userCanWorkWithCompany($company, $user->id), 403);
+    }
+
     private function canQueueAssign(Company $company): bool
     {
         return $company->status === 'new' && $company->first_contacted_at === null;
+    }
+
+    private function bulkAssignOwner(iterable $companies, User $user, ?int $targetUserId): array
+    {
+        if (! $user->isManager()) {
+            abort(403);
+        }
+
+        $updated = 0;
+        $skipped = 0;
+
+        foreach ($companies as $company) {
+            $currentOwnerId = $company->assigned_user_id !== null ? (int) $company->assigned_user_id : null;
+
+            if ($currentOwnerId === $targetUserId) {
+                $skipped++;
+                continue;
+            }
+
+            $company->update([
+                'assigned_user_id' => $targetUserId,
+            ]);
+            $updated++;
+        }
+
+        return [$updated, $skipped];
     }
 
     private function bulkAssignFirstCaller(iterable $companies, User $user, ?int $targetUserId, bool $forceSelf = false): array

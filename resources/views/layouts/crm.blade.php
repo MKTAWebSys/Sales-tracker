@@ -16,10 +16,14 @@
         })();
     </script>
     <style>
+        .crm-main main h1.text-2xl.font-semibold {
+            display: none;
+        }
+
         @media (min-width: 1024px) {
             .crm-shell {
                 display: grid;
-                grid-template-columns: 14.5rem minmax(0, 1fr);
+                grid-template-columns: 12rem minmax(0, 1fr);
                 min-height: 100vh;
                 transition: grid-template-columns 160ms ease;
             }
@@ -112,7 +116,7 @@
             }
 
             .crm-sidebar-header {
-                min-height: 6.5rem;
+                min-height: 5.25rem;
             }
 
             .crm-nav-section-title {
@@ -143,8 +147,8 @@
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
-                gap: 1px;
-                height: 2rem;
+                gap: 0;
+                height: auto;
             }
 
             .crm-brand-title {
@@ -152,11 +156,6 @@
                 line-height: 12px;
             }
 
-            .crm-brand-subtitle {
-                margin-top: 0;
-                font-size: 9px;
-                line-height: 9px;
-            }
         }
     </style>
 </head>
@@ -180,7 +179,6 @@
                 'links' => [
                     ['Kalendar', 'calendar.index', 'calendar'],
                     ['Hovory', 'calls.index', 'calls'],
-                    ['Follow-upy', 'follow-ups.index', 'followups'],
                     ['Schuzky', 'meetings.index', 'meetings'],
                 ],
             ],
@@ -198,6 +196,7 @@
                 'title' => 'Sprava',
                 'links' => [
                     ['Uzivatele', 'users.index', 'users'],
+                    ['Zaloha dat', 'admin.data-transfer.index', 'backup'],
                 ],
             ];
         }
@@ -227,14 +226,13 @@
 
     <div id="crm-shell" class="crm-shell min-h-screen lg:min-h-screen">
         <aside class="crm-sidebar border-b border-slate-200 bg-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-r">
-            <div class="crm-sidebar-header border-b border-slate-200 bg-white px-4 py-4 lg:px-5">
+            <div class="crm-sidebar-header border-b border-slate-200 bg-white px-3 py-3 lg:px-4">
                 <div class="crm-sidebar-brand-row flex items-center justify-between gap-3">
                     <div class="min-w-0">
                         <a href="{{ route('home') }}" class="crm-brand-link flex items-center gap-2 text-lg font-semibold">
                             <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-xs font-bold text-white">CRM</span>
                             <span class="crm-brand-copy min-w-0">
                                 <span class="crm-brand-title block truncate whitespace-nowrap">Call CRM</span>
-                                <span class="crm-brand-subtitle block truncate whitespace-nowrap font-normal text-slate-500">MVP evidence obchodnich callu</span>
                             </span>
                         </a>
                     </div>
@@ -256,7 +254,7 @@
                 @endauth
             </div>
 
-            <nav class="crm-sidebar-inner px-4 py-4 lg:flex lg:flex-1 lg:flex-col lg:px-5">
+            <nav class="crm-sidebar-inner px-3 py-3 lg:flex lg:flex-1 lg:flex-col lg:px-4">
                 <div class="crm-nav-sections space-y-5">
                     @foreach ($navSections as $section)
                         <div>
@@ -297,6 +295,9 @@
                                                     @break
                                                 @case('users')
                                                     <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8"><path d="M10 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M4 17a6 6 0 0 1 12 0"/></svg>
+                                                    @break
+                                                @case('backup')
+                                                    <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8"><path d="M4 6h12"/><path d="M4 10h12"/><path d="M4 14h8"/><path d="m12 14 2 2 3-3"/></svg>
                                                     @break
                                                 @default
                                                     <span class="text-xs font-semibold">{{ strtoupper(substr($label, 0, 1)) }}</span>
@@ -403,6 +404,53 @@
     @endif
 
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const syncSplitInput = function (mainInput) {
+                if (!mainInput) return;
+                const dateId = mainInput.getAttribute('data-split-date');
+                const timeId = mainInput.getAttribute('data-split-time');
+                if (!dateId || !timeId) return;
+
+                const dateInput = document.getElementById(dateId);
+                const timeInput = document.getElementById(timeId);
+                if (!dateInput || !timeInput) return;
+
+                const toMain = function () {
+                    const dateValue = String(dateInput.value || '').trim();
+                    const timeValue = String(timeInput.value || '').trim();
+                    mainInput.value = (dateValue && timeValue) ? (dateValue + 'T' + timeValue) : '';
+                };
+
+                const toSplit = function () {
+                    const raw = String(mainInput.value || '').trim();
+                    if (!raw) {
+                        dateInput.value = '';
+                        timeInput.value = '';
+                        return;
+                    }
+
+                    const parts = raw.split('T');
+                    dateInput.value = parts[0] || '';
+                    timeInput.value = (parts[1] || '').slice(0, 5);
+                };
+
+                toSplit();
+                mainInput.addEventListener('change', toSplit);
+                mainInput.addEventListener('input', toSplit);
+                dateInput.addEventListener('change', toMain);
+                dateInput.addEventListener('input', toMain);
+                timeInput.addEventListener('change', toMain);
+                timeInput.addEventListener('input', toMain);
+
+                const form = mainInput.closest('form');
+                if (form) {
+                    form.addEventListener('submit', toMain);
+                }
+            };
+
+            document.querySelectorAll('.js-datetime-main[data-split-date][data-split-time]').forEach(syncSplitInput);
+        });
+
         window.crmSuccessFeedback = function () {
             try {
                 if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
@@ -441,7 +489,7 @@
             const interactive = target.closest('[data-row-link-ignore], a, button, input, select, textarea, label, form');
             if (interactive) return;
 
-            const row = target.closest('tr[data-row-link]');
+            const row = target.closest('[data-row-link]');
             if (!row) return;
 
             const href = row.getAttribute('data-row-link');
@@ -525,7 +573,6 @@
         @if ($activeCallBanner)
             document.addEventListener('DOMContentLoaded', function () {
                 const activeCallReturnUrl = @json(route('calls.finish', ['call' => $activeCallBanner]));
-                const activeCompanyId = @json((int) $activeCallBanner->company_id);
                 const activeCallTimer = document.querySelector('.js-active-call-timer');
                 const calledAtIso = activeCallTimer ? String(activeCallTimer.getAttribute('data-called-at') || '') : '';
 
@@ -624,9 +671,6 @@
                 document.querySelectorAll('a[href*="/start-call"]').forEach(function (link) {
                     const href = String(link.getAttribute('href') || '');
                     if (!href) return;
-                    if (href.includes('/companies/' + activeCompanyId + '/start-call')) {
-                        return;
-                    }
 
                     link.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-auto');
                     link.setAttribute('aria-disabled', 'true');

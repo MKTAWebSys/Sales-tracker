@@ -26,7 +26,7 @@ Vytvorit jednoduchy interni CRM pro obchodni tym, ktery umozni:
 - nazev firmy
 - ICO (volitelne)
 - web (volitelne)
-- status (napr. `new`, `contacted`, `follow-up`, `qualified`, `lost`)
+- status (napr. `new`, `follow-up`, `meeting`, `deal`, `lost`)
 - poznamky
 - prirazeny obchodnik
 

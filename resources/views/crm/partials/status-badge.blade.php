@@ -5,9 +5,9 @@
     $palettes = [
         'company' => [
             'new' => 'bg-slate-100 text-slate-700 ring-slate-200',
-            'contacted' => 'bg-blue-100 text-blue-800 ring-blue-200',
             'follow-up' => 'bg-amber-100 text-amber-800 ring-amber-200',
-            'qualified' => 'bg-emerald-100 text-emerald-800 ring-emerald-200',
+            'meeting' => 'bg-blue-100 text-blue-800 ring-blue-200',
+            'deal' => 'bg-emerald-100 text-emerald-800 ring-emerald-200',
             'lost' => 'bg-rose-100 text-rose-800 ring-rose-200',
         ],
         'follow-up' => [
@@ -28,30 +28,31 @@
             'cancelled' => 'bg-rose-100 text-rose-800 ring-rose-200',
         ],
     ];
+
     $labelsByContext = [
         'company' => [
-            'new' => 'nová',
-            'contacted' => 'kontaktována',
+            'new' => 'nova',
             'follow-up' => 'follow-up',
-            'qualified' => 'kvalifikována',
+            'meeting' => 'schuzka',
+            'deal' => 'deal',
             'lost' => 'ztraceno',
         ],
         'follow-up' => [
-            'open' => 'otevřený',
+            'open' => 'otevreny',
             'done' => 'hotovo',
-            'cancelled' => 'zrušeno',
+            'cancelled' => 'zruseno',
         ],
         'lead-transfer' => [
-            'pending' => 'čeká',
-            'accepted' => 'přijato',
+            'pending' => 'ceka',
+            'accepted' => 'prijato',
             'done' => 'hotovo',
-            'cancelled' => 'zrušeno',
+            'cancelled' => 'zruseno',
         ],
         'meeting' => [
-            'planned' => 'plánováno',
+            'planned' => 'planovano',
             'confirmed' => 'potvrzeno',
             'done' => 'hotovo',
-            'cancelled' => 'zrušeno',
+            'cancelled' => 'zruseno',
         ],
     ];
 

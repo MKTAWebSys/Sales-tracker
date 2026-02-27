@@ -8,58 +8,13 @@ use App\Models\FollowUp;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class FollowUpController extends Controller
 {
     private const QUICK_STATUSES = ['open', 'done', 'cancelled'];
-
-    public function index(Request $request): View
-    {
-        $query = FollowUp::query()
-            ->with(['company', 'call', 'assignedUser'])
-            ->orderBy('due_at');
-        $isManager = $request->user()?->isManager() ?? false;
-        $mine = $isManager
-            ? (string) $request->input('mine', $request->filled('assigned_user_id') ? '0' : '1')
-            : '1';
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
-        }
-
-        if ($request->filled('company_id')) {
-            $query->where('company_id', $request->integer('company_id'));
-        }
-
-        if ($mine === '1' && $request->user()) {
-            $query->where('assigned_user_id', $request->user()->id);
-        } elseif ($isManager && $request->filled('assigned_user_id')) {
-            $query->where('assigned_user_id', $request->integer('assigned_user_id'));
-        }
-
-        if ($request->filled('due_from')) {
-            $query->whereDate('due_at', '>=', $request->date('due_from')?->toDateString());
-        }
-
-        if ($request->filled('due_to')) {
-            $query->whereDate('due_at', '<=', $request->date('due_to')?->toDateString());
-        }
-
-        return view('crm.follow-ups.index', [
-            'followUps' => $query->paginate(20)->withQueryString(),
-            'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
-            'users' => User::query()->orderBy('name')->get(['id', 'name']),
-            'filters' => [
-                'status' => (string) $request->input('status', ''),
-                'company_id' => (string) $request->input('company_id', ''),
-                'assigned_user_id' => (string) $request->input('assigned_user_id', ''),
-                'mine' => $mine,
-                'due_from' => (string) $request->input('due_from', ''),
-                'due_to' => (string) $request->input('due_to', ''),
-            ],
-        ]);
-    }
+    private const COMPANY_STATUSES = ['new', 'follow-up', 'meeting', 'deal', 'lost'];
 
     public function create(Request $request): View
     {
@@ -96,6 +51,8 @@ class FollowUpController extends Controller
 
     public function show(FollowUp $followUp): View
     {
+        $this->ensureCanAccessFollowUp(request()->user(), $followUp);
+
         $followUp->load(['company', 'call', 'assignedUser']);
 
         return view('crm.follow-ups.show', compact('followUp'));
@@ -103,6 +60,8 @@ class FollowUpController extends Controller
 
     public function edit(FollowUp $followUp): View
     {
+        $this->ensureCanAccessFollowUp(request()->user(), $followUp);
+
         return view('crm.follow-ups.form', [
             'followUp' => $followUp,
             'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
@@ -113,6 +72,8 @@ class FollowUpController extends Controller
 
     public function update(Request $request, FollowUp $followUp): RedirectResponse
     {
+        $this->ensureCanAccessFollowUp($request->user(), $followUp);
+
         $data = $this->validateFollowUp($request);
         if (! $request->user()?->isManager()) {
             $data['assigned_user_id'] = $followUp->assigned_user_id;
@@ -130,6 +91,11 @@ class FollowUpController extends Controller
 
     public function bulkComplete(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
         $ids = collect($request->input('follow_up_ids', []))
             ->filter(fn ($id) => is_numeric($id))
             ->map(fn ($id) => (int) $id)
@@ -138,13 +104,19 @@ class FollowUpController extends Controller
 
         if ($ids->isEmpty()) {
             return redirect()
-                ->route('follow-ups.index', $request->except('_token'))
+                ->route('companies.queue.mine')
                 ->with('status', 'Nebyly vybrány žádné follow-upy.');
         }
 
-        $updated = FollowUp::query()
+        $query = FollowUp::query()
             ->whereIn('id', $ids)
-            ->where('status', '!=', 'done')
+            ->where('status', '!=', 'done');
+
+        if (! $user->isManager()) {
+            $query->where('assigned_user_id', $user->id);
+        }
+
+        $updated = $query
             ->update([
                 'status' => 'done',
                 'completed_at' => now(),
@@ -152,7 +124,7 @@ class FollowUpController extends Controller
             ]);
 
         return redirect()
-            ->route('follow-ups.index', $request->except('_token', 'follow_up_ids'))
+            ->route('companies.queue.mine')
             ->with('status', "Označeno jako hotové: {$updated} follow-upů.");
     }
 
@@ -169,9 +141,17 @@ class FollowUpController extends Controller
 
         $data = $request->validate([
             'status' => ['required', 'in:'.implode(',', self::QUICK_STATUSES)],
+            'company_status' => ['nullable', 'in:'.implode(',', self::COMPANY_STATUSES)],
+            'next_follow_up_at' => ['nullable', 'date'],
+            'reassign_user_id' => ['nullable', 'exists:users,id'],
         ]);
 
         $status = $data['status'];
+
+        if ($status === 'done' && $followUp->company) {
+            $this->resolveCompanyAfterFollowUpDone($followUp, $data);
+        }
+
         $followUp->update([
             'status' => $status,
             'completed_at' => $status === 'done'
@@ -180,8 +160,53 @@ class FollowUpController extends Controller
         ]);
 
         return redirect()
-            ->to(url()->previous() ?: route('follow-ups.index'))
+            ->to(url()->previous() ?: route('companies.queue.mine'))
             ->with('status', 'Stav follow-upu byl rychle upraven.');
+    }
+
+    private function resolveCompanyAfterFollowUpDone(FollowUp $followUp, array $data): void
+    {
+        $company = $followUp->company;
+        if (! $company) {
+            return;
+        }
+
+        $targetStatus = (string) ($data['company_status'] ?? '');
+        $nextFollowUpAt = $data['next_follow_up_at'] ?? null;
+        $reassignUserId = isset($data['reassign_user_id']) && $data['reassign_user_id'] !== null
+            ? (int) $data['reassign_user_id']
+            : (int) $followUp->assigned_user_id;
+
+        if ($targetStatus === '') {
+            $targetStatus = match ($company->status) {
+                'new' => 'follow-up',
+                'follow-up' => 'follow-up',
+                default => $company->status,
+            };
+        }
+
+        if ($targetStatus === 'follow-up' && empty($nextFollowUpAt)) {
+            throw ValidationException::withMessages([
+                'next_follow_up_at' => 'Pokud firma zustava ve follow-upu, je potreba naplanovat dalsi termin.',
+            ]);
+        }
+
+        $company->update(array_filter([
+            'status' => $targetStatus,
+            'first_caller_user_id' => $reassignUserId > 0 ? $reassignUserId : null,
+            'first_caller_assigned_at' => $reassignUserId > 0 ? now() : null,
+        ], fn ($value) => $value !== null));
+
+        if ($targetStatus === 'follow-up' && $nextFollowUpAt) {
+            FollowUp::query()->create([
+                'company_id' => $company->id,
+                'call_id' => $followUp->call_id,
+                'assigned_user_id' => $reassignUserId > 0 ? $reassignUserId : $followUp->assigned_user_id,
+                'due_at' => $nextFollowUpAt,
+                'status' => 'open',
+                'note' => 'Navazujici follow-up po uzavreni predchoziho follow-upu.',
+            ]);
+        }
     }
 
     private function validateFollowUp(Request $request): array
@@ -194,5 +219,18 @@ class FollowUpController extends Controller
             'status' => ['required', 'string', 'max:50'],
             'note' => ['nullable', 'string'],
         ]);
+    }
+
+    private function ensureCanAccessFollowUp(?User $user, FollowUp $followUp): void
+    {
+        if (! $user) {
+            abort(401);
+        }
+
+        if ($user->isManager()) {
+            return;
+        }
+
+        abort_unless((int) ($followUp->assigned_user_id ?? 0) === (int) $user->id, 403);
     }
 }

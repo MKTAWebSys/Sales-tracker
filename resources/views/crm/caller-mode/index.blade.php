@@ -17,7 +17,7 @@
                 $cleanPhone = $company->phone ? preg_replace('/[^\d\+]/', '', $company->phone) : null;
             @endphp
 
-            <div class="js-caller-swipe-card rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm ring-1 ring-emerald-100 transition will-change-transform" data-swipe-next-url="{{ route('companies.next-mine', ['current_company_id' => $company->id, 'skip_lost' => 1]) }}" data-swipe-defer-url="{{ route('companies.quick-defer', $company) }}">
+            <div class="js-caller-swipe-card rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm ring-1 ring-emerald-100 transition will-change-transform" data-swipe-next-url="{{ route('companies.next-mine', ['current_company_id' => $company->id, 'skip_lost' => 1]) }}" data-swipe-defer-url="{{ route('companies.quick-defer', $company) }}" data-csrf-token="{{ csrf_token() }}">
                 <div class="mb-3 flex items-center justify-between gap-3">
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Moje dalsi firma</div>
@@ -67,9 +67,13 @@
                             </button>
                         </form>
                     @else
-                        <a href="{{ route('companies.calls.start', ['company' => $company, 'caller_mode' => 1]) }}" class="flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-4 text-base font-semibold text-white shadow-sm">
-                            Zahajit hovor
-                        </a>
+                        <form method="POST" action="{{ route('companies.calls.start', $company) }}">
+                            @csrf
+                            <input type="hidden" name="caller_mode" value="1">
+                            <button type="submit" class="flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-4 text-base font-semibold text-white shadow-sm">
+                                Zahajit hovor
+                            </button>
+                        </form>
                     @endif
 
                     @if ($cleanPhone)
@@ -84,9 +88,12 @@
                 </div>
 
                 <div class="mt-3 grid gap-2 sm:grid-cols-2">
-                    <a href="{{ route('companies.quick-defer', $company) }}" class="js-caller-swipe-defer rounded-lg bg-amber-50 px-3 py-2 text-center text-sm font-medium text-amber-900 ring-1 ring-amber-200">
-                        Odlozit + dalsi firma
-                    </a>
+                    <form method="POST" action="{{ route('companies.quick-defer', $company) }}">
+                        @csrf
+                        <button type="submit" class="js-caller-swipe-defer w-full rounded-lg bg-amber-50 px-3 py-2 text-center text-sm font-medium text-amber-900 ring-1 ring-amber-200">
+                            Odlozit + dalsi firma
+                        </button>
+                    </form>
                     <a href="{{ route('companies.next-mine', ['current_company_id' => $company->id, 'skip_lost' => 1]) }}" class="js-caller-swipe-next rounded-lg bg-slate-100 px-3 py-2 text-center text-sm font-medium text-slate-700 ring-1 ring-slate-200">
                         Preskocit na dalsi
                     </a>
@@ -113,7 +120,7 @@
             </div>
             <ul class="space-y-2 text-sm">
                 @forelse ($upcomingFollowUps as $followUp)
-                    <li class="rounded-lg border border-slate-200 p-3">
+                    <li class="cursor-pointer rounded-lg border border-slate-200 p-3 hover:brightness-[0.99]" data-row-link="{{ route('follow-ups.show', $followUp) }}">
                         <div class="flex items-center justify-between gap-2">
                             <div class="font-medium">{{ $followUp->company?->name ?? '-' }}</div>
                             <a href="{{ route('follow-ups.show', $followUp) }}" class="text-xs text-slate-600 underline">Detail</a>
@@ -197,7 +204,7 @@
                     card.style.transform = 'translateX(' + Math.max(-120, Math.min(120, dx)) + 'px)';
                 }, { passive: true });
 
-                card.addEventListener('touchend', function () {
+                card.addEventListener('touchend', async function () {
                     if (!dragging) return;
                     dragging = false;
 
@@ -209,7 +216,26 @@
 
                     if (currentDx >= threshold) {
                         const url = card.getAttribute('data-swipe-defer-url');
-                        if (url) window.location.href = url;
+                        const csrfToken = card.getAttribute('data-csrf-token');
+                        if (url && csrfToken) {
+                            try {
+                                const response = await fetch(url, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': csrfToken,
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                    },
+                                    credentials: 'same-origin',
+                                });
+                                if (response.redirected) {
+                                    window.location.href = response.url;
+                                    return;
+                                }
+                                window.location.reload();
+                            } catch (error) {
+                                window.location.reload();
+                            }
+                        }
                         return;
                     }
 

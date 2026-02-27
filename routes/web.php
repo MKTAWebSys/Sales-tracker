@@ -5,6 +5,7 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CallerModeController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DataTransferController;
 use App\Http\Controllers\FollowUpController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\LeadTransferController;
@@ -31,7 +32,11 @@ Route::middleware('auth')->group(function () {
         'update',
     ]);
     Route::post('/companies/{company}/quick-status', [CompanyController::class, 'quickStatus'])->name('companies.quick-status');
-    Route::match(['get', 'post'], '/companies/{company}/quick-defer', [CompanyController::class, 'quickDefer'])->name('companies.quick-defer');
+    Route::post('/companies/{company}/quick-assigned-user', [CompanyController::class, 'quickAssignedUser'])->name('companies.quick-assigned-user');
+    Route::post('/companies/{company}/quick-first-caller', [CompanyController::class, 'quickFirstCaller'])->name('companies.quick-first-caller');
+    Route::post('/companies/{company}/quick-defer', [CompanyController::class, 'quickDefer'])->name('companies.quick-defer');
+    Route::post('/companies/{company}/contacts', [CompanyController::class, 'storeContact'])->name('companies.contacts.store');
+    Route::delete('/companies/{company}/contacts/{contact}', [CompanyController::class, 'destroyContact'])->name('companies.contacts.destroy');
     Route::get('/companies-next/mine', [CompanyController::class, 'nextMine'])->name('companies.next-mine');
     Route::get('/companies/queue/mine', [CompanyController::class, 'queueMine'])->name('companies.queue.mine');
     Route::post('/companies/bulk', [CompanyController::class, 'bulk'])->name('companies.bulk');
@@ -46,10 +51,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/calls/{call}/quick-outcome', [CallController::class, 'quickOutcome'])->name('calls.quick-outcome');
     Route::post('/calls/{call}/quick-note', [CallController::class, 'quickNote'])->name('calls.quick-note');
     Route::post('/calls/{call}/end', [CallController::class, 'end'])->name('calls.end');
-    Route::match(['get', 'post'], '/companies/{company}/start-call', [CallController::class, 'quickStart'])->name('companies.calls.start');
+    Route::post('/companies/{company}/start-call', [CallController::class, 'quickStart'])->name('companies.calls.start');
     Route::get('/calls/{call}/finish', [CallController::class, 'finish'])->name('calls.finish');
     Route::resource('follow-ups', FollowUpController::class)->only([
-        'index',
         'create',
         'store',
         'show',
@@ -59,6 +63,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/follow-ups/{followUp}/quick-status', [FollowUpController::class, 'quickStatus'])->name('follow-ups.quick-status');
     Route::post('/follow-ups/bulk-complete', [FollowUpController::class, 'bulkComplete'])->name('follow-ups.bulk-complete');
     Route::get('/imports/xlsx', [ImportController::class, 'xlsx'])->name('imports.xlsx');
+    Route::post('/imports/xlsx/preview', [ImportController::class, 'preview'])->middleware('throttle:10,1')->name('imports.xlsx.preview');
+    Route::post('/imports/xlsx/confirm', [ImportController::class, 'confirm'])->middleware('throttle:10,1')->name('imports.xlsx.confirm');
     Route::resource('lead-transfers', LeadTransferController::class)->only([
         'index',
         'create',
@@ -78,6 +84,9 @@ Route::middleware('auth')->group(function () {
     ]);
     Route::post('/meetings/{meeting}/quick-status', [MeetingController::class, 'quickStatus'])->name('meetings.quick-status');
     Route::resource('users', UserManagementController::class)->except(['show']);
+    Route::get('/admin/data-transfer', [DataTransferController::class, 'index'])->name('admin.data-transfer.index');
+    Route::get('/admin/data-transfer/export', [DataTransferController::class, 'exportSnapshot'])->name('admin.data-transfer.export');
+    Route::post('/admin/data-transfer/import', [DataTransferController::class, 'importSnapshot'])->middleware('throttle:3,1')->name('admin.data-transfer.import');
 
     // Breeze profile routes can stay alongside CRM modules.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

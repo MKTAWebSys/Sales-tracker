@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Call;
 use App\Models\Company;
 use App\Models\Meeting;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -15,9 +16,20 @@ class MeetingController extends Controller
 
     public function index(Request $request): View
     {
+        $user = $request->user();
         $query = Meeting::query()
             ->with(['company', 'call'])
             ->orderBy('scheduled_at');
+
+        if ($user && ! $user->isManager()) {
+            $query->where(function ($subQuery) use ($user) {
+                $subQuery
+                    ->whereHas('call', fn ($q) => $q->where('caller_id', $user->id))
+                    ->orWhereHas('company', fn ($q) => $q
+                        ->where('assigned_user_id', $user->id)
+                        ->orWhere('first_caller_user_id', $user->id));
+            });
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->string('status'));
@@ -68,6 +80,8 @@ class MeetingController extends Controller
 
     public function show(Meeting $meeting): View
     {
+        $this->ensureCanAccessMeeting(request()->user(), $meeting);
+
         $meeting->load(['company', 'call.company']);
 
         return view('crm.meetings.show', compact('meeting'));
@@ -75,6 +89,8 @@ class MeetingController extends Controller
 
     public function edit(Meeting $meeting): View
     {
+        $this->ensureCanAccessMeeting(request()->user(), $meeting);
+
         return view('crm.meetings.form', [
             'meeting' => $meeting,
             'companies' => Company::query()->orderBy('name')->get(['id', 'name']),
@@ -84,6 +100,8 @@ class MeetingController extends Controller
 
     public function update(Request $request, Meeting $meeting): RedirectResponse
     {
+        $this->ensureCanAccessMeeting($request->user(), $meeting);
+
         $meeting->update($this->validateMeeting($request));
 
         return redirect()
@@ -93,6 +111,8 @@ class MeetingController extends Controller
 
     public function quickStatus(Request $request, Meeting $meeting): RedirectResponse
     {
+        $this->ensureCanAccessMeeting($request->user(), $meeting);
+
         $data = $request->validate([
             'status' => ['required', 'in:'.implode(',', self::QUICK_STATUSES)],
         ]);
@@ -116,5 +136,24 @@ class MeetingController extends Controller
             'status' => ['required', 'string', 'max:50'],
             'note' => ['nullable', 'string'],
         ]);
+    }
+
+    private function ensureCanAccessMeeting(?User $user, Meeting $meeting): void
+    {
+        if (! $user) {
+            abort(401);
+        }
+
+        if ($user->isManager()) {
+            return;
+        }
+
+        $meeting->loadMissing('company:id,assigned_user_id,first_caller_user_id', 'call:id,caller_id');
+
+        $allowed = ((int) ($meeting->call?->caller_id ?? 0) === (int) $user->id)
+            || ((int) ($meeting->company?->assigned_user_id ?? 0) === (int) $user->id)
+            || ((int) ($meeting->company?->first_caller_user_id ?? 0) === (int) $user->id);
+
+        abort_unless($allowed, 403);
     }
 }

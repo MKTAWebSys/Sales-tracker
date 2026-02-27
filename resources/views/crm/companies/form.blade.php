@@ -34,11 +34,25 @@
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
+            <div>
+                <label for="turnover" class="block text-sm font-medium text-slate-700">Obrat</label>
+                <input id="turnover" name="turnover" type="text" value="{{ old('turnover', $company->turnover) }}" class="mt-1 w-full rounded-md border-slate-300" placeholder="napr. 12 500 000 CZK">
+                @error('turnover')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label for="nace" class="block text-sm font-medium text-slate-700">NACE</label>
+                <input id="nace" name="nace" type="text" value="{{ old('nace', $company->nace) }}" class="mt-1 w-full rounded-md border-slate-300" placeholder="napr. 62.01">
+                @error('nace')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
 
             <div>
                 <label for="status" class="block text-sm font-medium text-slate-700">Stav</label>
                 <select id="status" name="status" class="mt-1 w-full rounded-md border-slate-300">
-                    @foreach (['new', 'contacted', 'follow-up', 'qualified', 'lost'] as $status)
+                    @foreach (['new', 'follow-up', 'meeting', 'deal', 'lost'] as $status)
                         <option value="{{ $status }}" @selected(old('status', $company->status ?: 'new') === $status)>{{ $status }}</option>
                     @endforeach
                 </select>
@@ -56,11 +70,34 @@
             @enderror
         </div>
 
+        <div>
+            <label for="address" class="block text-sm font-medium text-slate-700">Adresa</label>
+            <input id="address" name="address" type="text" value="{{ old('address', $company->address) }}" class="mt-1 w-full rounded-md border-slate-300">
+            @error('address')
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <div>
+            <label for="region" class="block text-sm font-medium text-slate-700">Kraj</label>
+            <input id="region" name="region" type="text" value="{{ old('region', $company->region) }}" class="mt-1 w-full rounded-md border-slate-300">
+            @error('region')
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+        </div>
+
         <div class="grid gap-6 sm:grid-cols-2">
             <div>
                 <label for="contact_person" class="block text-sm font-medium text-slate-700">Kontaktni osoba</label>
                 <input id="contact_person" name="contact_person" type="text" value="{{ old('contact_person', $company->contact_person) }}" class="mt-1 w-full rounded-md border-slate-300">
                 @error('contact_person')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label for="email" class="block text-sm font-medium text-slate-700">E-mail</label>
+                <input id="email" name="email" type="email" value="{{ old('email', $company->email) }}" class="mt-1 w-full rounded-md border-slate-300">
+                @error('email')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
@@ -107,7 +144,19 @@
 
                     <div>
                         <label for="first_caller_assigned_at" class="block text-sm font-medium text-slate-700">Queue assigned at</label>
-                        <input id="first_caller_assigned_at" name="first_caller_assigned_at" type="datetime-local" value="{{ $firstCallerAssignedAtValue }}" class="mt-1 w-full rounded-md border-slate-300">
+                        <input
+                            id="first_caller_assigned_at"
+                            name="first_caller_assigned_at"
+                            type="datetime-local"
+                            value="{{ $firstCallerAssignedAtValue }}"
+                            class="sr-only js-datetime-main"
+                            data-split-date="first_caller_assigned_at_date"
+                            data-split-time="first_caller_assigned_at_time"
+                        >
+                        <div class="mt-1 flex items-center gap-2 rounded-md bg-white/70 px-2 py-1 ring-1 ring-slate-200">
+                            <input id="first_caller_assigned_at_date" type="date" class="h-9 rounded-md border-slate-300 text-sm">
+                            <input id="first_caller_assigned_at_time" type="time" step="60" class="h-9 w-32 rounded-md border-slate-300 text-sm">
+                        </div>
                         @error('first_caller_assigned_at')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -115,7 +164,19 @@
 
                     <div>
                         <label for="first_contacted_at" class="block text-sm font-medium text-slate-700">First contacted at</label>
-                        <input id="first_contacted_at" name="first_contacted_at" type="datetime-local" value="{{ $firstContactedAtValue }}" class="mt-1 w-full rounded-md border-slate-300">
+                        <input
+                            id="first_contacted_at"
+                            name="first_contacted_at"
+                            type="datetime-local"
+                            value="{{ $firstContactedAtValue }}"
+                            class="sr-only js-datetime-main"
+                            data-split-date="first_contacted_at_date"
+                            data-split-time="first_contacted_at_time"
+                        >
+                        <div class="mt-1 flex items-center gap-2 rounded-md bg-white/70 px-2 py-1 ring-1 ring-slate-200">
+                            <input id="first_contacted_at_date" type="date" class="h-9 rounded-md border-slate-300 text-sm">
+                            <input id="first_contacted_at_time" type="time" step="60" class="h-9 w-32 rounded-md border-slate-300 text-sm">
+                        </div>
                         @error('first_contacted_at')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -138,3 +199,4 @@
         </div>
     </form>
 @endsection
+

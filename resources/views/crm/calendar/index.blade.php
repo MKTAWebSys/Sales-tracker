@@ -3,7 +3,6 @@
 @section('content')
     @php
         $todayDate = now()->format('Y-m-d');
-        $isToday = $calendarDate->isSameDay(now());
         $viewMode = $viewMode ?? 'week';
         $today = now()->startOfDay();
 
@@ -17,6 +16,12 @@
             $prevDate = $calendarDate->copy()->subWeek()->format('Y-m-d');
             $nextDate = $calendarDate->copy()->addWeek()->format('Y-m-d');
         }
+
+        $centerLabel = match ($viewMode) {
+            'day' => $calendarDate->format('d.m.Y'),
+            'week' => 'Tyden '.$calendarDate->isoFormat('W/YYYY'),
+            default => $calendarDate->copy()->locale('cs')->isoFormat('MMMM YYYY'),
+        };
 
         $dayHeaders = ['Po', 'Ut', 'St', 'Ct', 'Pa', 'So', 'Ne'];
     @endphp
@@ -45,7 +50,9 @@
                     <path d="M12.5 4.5 7 10l5.5 5.5" />
                 </svg>
             </a>
-            <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $todayDate])) }}" class="inline-flex h-8 items-center rounded-md {{ $isToday ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700' }} px-3 text-sm font-medium">Dnes</a>
+            <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $todayDate])) }}" class="inline-flex h-8 w-44 items-center justify-center rounded-md bg-slate-900 px-3 text-sm font-medium text-white truncate" title="Skok na aktualni obdobi">
+                {{ $centerLabel }}
+            </a>
             <a href="{{ route('calendar.index', array_merge(request()->except('date', 'page'), ['date' => $nextDate])) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-slate-200 text-slate-700" title="Dalsi" aria-label="Dalsi">
                 <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M7.5 4.5 13 10l-5.5 5.5" />
@@ -55,10 +62,10 @@
 
         <div class="ml-auto inline-flex h-10 items-center gap-2 rounded-lg bg-white px-2 py-1 ring-1 ring-slate-200">
             @if ($isManager)
-                <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-8 min-w-[12rem] rounded-md border-slate-300 py-0 text-sm">
+                <select id="calendar_header_assigned_user_id" name="assigned_user_id" form="calendar-filter-form" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="h-8 min-w-[12rem] rounded-md border-slate-300 py-0 text-sm text-slate-700">
                     <option value="">Uzivatel: Vse</option>
                     @foreach ($users as $user)
-                        <option value="{{ $user->id }}" @selected(($filters['assigned_user_id'] ?? '') === (string) $user->id)>{{ $user->name }}</option>
+                        <option value="{{ $user->id }}" @selected(($filters['assigned_user_id'] ?? '') === (string) $user->id)>Uzivatel: {{ $user->name }}</option>
                     @endforeach
                 </select>
                 <input type="hidden" name="mine" value="0">
@@ -284,7 +291,7 @@
                     ? 'border-rose-200 bg-rose-50/30'
                     : ($isFollowUp ? 'border-amber-200 bg-amber-50/30' : 'border-emerald-200 bg-emerald-50/30');
             @endphp
-            <div class="rounded-xl border {{ $containerClass }} p-4 shadow-sm">
+            <div class="cursor-pointer rounded-xl border {{ $containerClass }} p-4 shadow-sm hover:brightness-[0.99]" data-row-link="{{ $item['detail_url'] }}">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
@@ -308,9 +315,10 @@
                             <form method="POST" action="{{ route('follow-ups.quick-status', $item['model']) }}">
                                 @csrf
                                 <input type="hidden" name="status" value="done">
-                                <button type="submit" class="rounded-md bg-amber-600 px-3 py-2 text-xs font-medium text-white">Hotovo</button>
+                                <input type="hidden" name="company_status" value="follow-up">
+                                <button type="submit" class="rounded-md bg-amber-600 px-3 py-2 text-xs font-medium text-white">Hotovo (kontaktovano)</button>
                             </form>
-                            <a href="{{ route('follow-ups.edit', $item['model']) }}" class="rounded-md bg-white px-3 py-2 text-xs font-medium text-slate-700 ring-1 ring-slate-300">Presunout</a>
+                            <a href="{{ route('follow-ups.edit', $item['model']) }}" class="rounded-md bg-white px-3 py-2 text-xs font-medium text-slate-700 ring-1 ring-slate-300">Preplanovat</a>
                         @else
                             <form method="POST" action="{{ route('meetings.quick-status', $item['model']) }}" class="js-inline-save-form flex items-center gap-2">
                                 @csrf

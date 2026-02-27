@@ -1,76 +1,69 @@
-# Handoff / Pokracovani na druhem PC
+# Handoff - pokracovani doma
 
-## Aktualni branch (dulezite)
+## Branch a stav
 
-- Pokracovat na branche:
-  - `codex/company-call-queue-bulk-actions`
+- Aktivni branch: `main`
+- Lokalni zmeny jsou commitnute v tomto kroku (viz posledni commit).
 
-## Co je uz pushnute na GitHub
+## Co je hotove (posledni iterace)
 
-- Vsechny posledni zmeny jsou pushnute na GitHub (`origin/codex/company-call-queue-bulk-actions`)
-- Dashboard cleanup (bez admin panelu cile obvolani)
-- Call workflow UI/UX (aktivni hovor, finalize recap, outcome chipy)
-- Caller mode swipe UX
-- Quick callback presety + rychly datum/cas
-- Floating active call panel + quick note AJAX
-- Kalendar header UX cleanup + auto-refresh filtry
-- `Mesic` view = rolling 5 tydnu kolem vybraneho dne
+- Zuzene leve sidebar menu (vice mista pro obsah).
+- Odebran claim pod `Call CRM` v levem menu.
+- Detail firmy:
+  - odebrano horni tlacitko `Zahajit hovor`,
+  - telefony jsou zobrazene jako samostatne klikaci polozky,
+  - stejne chovani i u kontaktnich osob.
+- Kontakty firmy:
+  - samostatna entita `company_contacts`,
+  - pridani/smazani kontaktu v detailu firmy.
+- Import XLSX:
+  - aliasy sloupcu + rucni mapovani,
+  - podpora telefonu + mobilu (slouceni do telefonu firmy),
+  - import omezeni poctu radku pro testovaci import.
+- Snapshot export/import dat:
+  - zahrnuje i `company_contacts`.
+- Security hardening je popsany v `SECURITY.md`.
 
-## Dulezite workflow zmeny (shrnutí)
+## Jak to doma spustit (BE + FE)
 
-- Aktivni hovor:
-  - jen 1 aktivni hovor na uzivatele
-  - `pending` + `ended_at = null`
-- Ukonceni hovoru:
-  - `POST /calls/{call}/end`
-  - hovor se zastavi hned (`ended_at`)
-  - pak nasleduje finalize formular (`Hovor ukoncen`)
-- Finalize formular:
-  - recap karta je nahore (firma / od-do / delka)
-  - `Vysledek hovoru` = velka tlacitka/chipy
-  - callback preset + quick datum/cas
-  - navazujici pole v accordion sekcich
-
-## Co otestovat po otevreni na druhem PC
-
-1. `Caller mode`:
-   - `Zahajit hovor`
-   - quick note ve floating panelu
-   - `Ukoncit hovor`
-   - finalize s outcome chipy
-2. `Zavolat znovu`:
-   - preset tlacitka (`Dnes odpoledne`, `Zitra...`)
-   - quick datum/cas inputy
-3. `Dashboard`:
-   - prepinac `Pohled uzivatele` je v headeru
-   - admin panel cile obvolani uz neni na dashboardu
-4. `Moje fronta` a `Firmy`:
-   - bulk akce pro `first caller`
-5. `Kalendar`:
-   - vyber uzivatele meni i denni agendu
-   - `Jen moje agenda` je deaktivovane pri vyberu konkretniho uzivatele
-   - mesicni pohled ukazuje 5 tydnu kolem vybraneho dne
-
-## Spusteni lokalne (Windows)
-
+1. Backend:
 ```powershell
 php -S 127.0.0.1:9000 -t public
 ```
 
-- FE dev (pokud je potreba live reload):
-
+2. Frontend (druhe okno):
 ```powershell
 npm run dev
 ```
 
-## Demo login (pokud DB se seedery)
+3. Otevrit:
+- `http://127.0.0.1:9000`
+
+## DB - cisty start / migrace / seed
+
+- Jen migrace:
+```powershell
+php artisan migrate
+```
+
+- Cisty reset (smaze vsechna data):
+```powershell
+php artisan migrate:fresh
+```
+
+- Demo data:
+```powershell
+php artisan db:seed --class=DemoCrmSeeder
+php artisan db:seed --class=DemoPetrZvelebilSeeder
+```
+
+## Prihlaseni (demo)
 
 - `petr.zvelebil@awebsys.cz` / `password`
 
-## Doporučené dalsi kroky
+## Co je dalsi krok
 
-1. Sloucit branch do `main` a pokracovat uz primo na `main` (pokud je to preferovany workflow)
-2. Doladit posledni px v kalendar headeru (spacing / zarovnani) podle monitoru
-3. Sprava `cilu obvolani` pouze v `Uzivatele` (UI sekce / edit)
-4. Testy pro single-active-call a finalize flow
-5. Outlook/Google sync priprava (`external_calendar_*` sloupce + `.ics` export)
+1. Doresit UX detailu firmy do kompaktniho layoutu i pro mensi monitor.
+2. Dotahnout import flow pro velke davky (napr. 10k firem) vcetne validacniho reportu.
+3. Pripravit navaznou agendu "obchodni pripady" (dealy, nabidky, fakturace) - zatim mimo MVP.
+
